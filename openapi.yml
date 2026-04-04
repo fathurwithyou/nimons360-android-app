@@ -1,0 +1,358 @@
+openapi: 3.0.3
+info:
+  title: Nimons360 API
+  description: REST API for the Nimons360 family tracking application
+  version: 1.0.0
+
+servers:
+  - url: https://mad.labpro.hmif.dev
+    description: Server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    LoginResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                token:
+                  type: string
+
+    Profile:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+
+    ProfileResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/Profile'
+
+    UpdateProfileRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+
+    FamilyMember:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+
+    FamilySummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        icon:
+          type: string
+          format: uri
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/FamilyMember'
+
+    FamilyDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        icon:
+          type: string
+          format: uri
+        code:
+          type: string
+          nullable: true
+        isMember:
+          type: boolean
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/FamilyMember'
+
+    FamilyListResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/FamilySummary'
+
+    FamilyDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/FamilyDetail'
+
+    CreateFamilyRequest:
+      type: object
+      required: [name, icon]
+      properties:
+        name:
+          type: string
+        icon:
+          type: string
+          format: uri
+          description: |
+            Must be one of:
+            https://mad.labpro.hmif.dev/assets/family_icon_1.png
+            https://mad.labpro.hmif.dev/assets/family_icon_2.png
+            https://mad.labpro.hmif.dev/assets/family_icon_3.png
+            https://mad.labpro.hmif.dev/assets/family_icon_4.png
+            https://mad.labpro.hmif.dev/assets/family_icon_5.png
+            https://mad.labpro.hmif.dev/assets/family_icon_6.png
+            https://mad.labpro.hmif.dev/assets/family_icon_7.png
+            https://mad.labpro.hmif.dev/assets/family_icon_8.png
+
+    JoinFamilyRequest:
+      type: object
+      required: [familyId, code]
+      properties:
+        familyId:
+          type: string
+        code:
+          type: string
+          minLength: 6
+          maxLength: 6
+
+    LeaveFamilyRequest:
+      type: object
+      required: [familyId]
+      properties:
+        familyId:
+          type: string
+
+security:
+  - BearerAuth: []
+
+paths:
+  /api/login:
+    post:
+      summary: Login with email and password
+      security: []
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+        '409':
+          description: Unauthorized / Token expired
+
+  /api/me:
+    get:
+      summary: Get current user profile
+      tags: [User]
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '409':
+          description: Unauthorized
+    patch:
+      summary: Update current user profile
+      tags: [User]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '409':
+          description: Unauthorized
+
+  /api/me/families:
+    get:
+      summary: Get families the current user has joined
+      tags: [Families]
+      responses:
+        '200':
+          description: List of user's families
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FamilyListResponse'
+        '409':
+          description: Unauthorized
+
+  /api/families/discover:
+    get:
+      summary: Get 5 random families to discover
+      tags: [Families]
+      responses:
+        '200':
+          description: List of discoverable families
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FamilyListResponse'
+        '409':
+          description: Unauthorized
+
+  /api/families:
+    get:
+      summary: Get all families
+      tags: [Families]
+      responses:
+        '200':
+          description: List of all families
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FamilyListResponse'
+        '409':
+          description: Unauthorized
+    post:
+      summary: Create a new family
+      tags: [Families]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFamilyRequest'
+      responses:
+        '201':
+          description: Family created. Creator automatically joins.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FamilyDetailResponse'
+        '409':
+          description: Unauthorized
+
+  /api/families/{familyId}:
+    get:
+      summary: Get family detail by ID
+      tags: [Families]
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Family detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FamilyDetailResponse'
+        '404':
+          description: Family not found
+        '409':
+          description: Unauthorized
+
+  /api/families/join:
+    post:
+      summary: Join a family using a code
+      tags: [Families]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinFamilyRequest'
+      responses:
+        '200':
+          description: Successfully joined
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: Invalid code
+        '409':
+          description: Unauthorized
+
+  /api/families/leave:
+    post:
+      summary: Leave a family
+      tags: [Families]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveFamilyRequest'
+      responses:
+        '200':
+          description: Successfully left
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '409':
+          description: Unauthorized
