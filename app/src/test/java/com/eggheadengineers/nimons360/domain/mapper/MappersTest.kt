@@ -1,15 +1,20 @@
 package com.eggheadengineers.nimons360.domain.mapper
 
+import com.eggheadengineers.nimons360.data.dto.FamilyDetailDto
 import com.eggheadengineers.nimons360.data.dto.FamilyMemberDto
 import com.eggheadengineers.nimons360.data.dto.FamilySummaryDto
 import com.eggheadengineers.nimons360.data.dto.MemberPresenceUpdatedPayloadDto
 import com.eggheadengineers.nimons360.data.dto.ProfileDto
+import com.eggheadengineers.nimons360.data.local.PinnedFamilyEntity
+import com.eggheadengineers.nimons360.domain.model.Family
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.*
 import org.junit.Test
 
 class MappersTest {
 
-    // ── MemberPresenceUpdatedPayloadDto.toDomain() ──
+    // MemberPresenceUpdatedPayloadDto.toDomain()
 
     @Test
     fun `toDomain maps all fields correctly`() {
@@ -24,7 +29,7 @@ class MappersTest {
             batteryLevel = 92,
             isCharging = true,
             internetStatus = "wifi",
-            metadata = mapOf("key" to "value"),
+            metadata = JsonObject(mapOf("key" to JsonPrimitive("value"))),
         )
         val domain = dto.toDomain()
 
@@ -75,7 +80,7 @@ class MappersTest {
         assertEquals("unknown", domain.internetStatus)
     }
 
-    // ── ProfileDto.toDomain() ──
+    // ProfileDto.toDomain()
 
     @Test
     fun `ProfileDto toDomain maps correctly`() {
@@ -89,7 +94,7 @@ class MappersTest {
         assertEquals("charlie@test.com", domain.email)
     }
 
-    // ── FamilyMemberDto.toDomain() ──
+    // FamilyMemberDto.toDomain()
 
     @Test
     fun `FamilyMemberDto toDomain maps correctly`() {
@@ -107,7 +112,7 @@ class MappersTest {
         assertEquals("", domain.id)
     }
 
-    // ── FamilySummaryDto.toDomain() ──
+    // FamilySummaryDto.toDomain()
 
     @Test
     fun `FamilySummaryDto toDomain maps correctly with members`() {
@@ -149,5 +154,87 @@ class MappersTest {
         assertTrue(domain.members.isEmpty())
         assertFalse(domain.isPinned)
         assertNull(domain.memberCount)
+    }
+
+    // FamilyDetailDto.toDomain()
+
+    @Test
+    fun `FamilyDetailDto toDomain maps all fields`() {
+        val dto = FamilyDetailDto(
+            id = 5,
+            name = "Detail Family",
+            iconUrl = "https://example.com/icon.png",
+            familyCode = "ABCD12",
+            isMember = true,
+            createdAt = null,
+            updatedAt = null,
+            members = listOf(
+                FamilyMemberDto(id = 1, fullName = "Alice", email = "a@t.com", joinedAt = null),
+            ),
+        )
+
+        val domain = dto.toDomain()
+
+        assertEquals("5", domain.id)
+        assertEquals("Detail Family", domain.name)
+        assertEquals("https://example.com/icon.png", domain.iconUrl)
+        assertEquals("ABCD12", domain.code)
+        assertTrue(domain.isMember)
+        assertEquals(1, domain.members.size)
+        assertEquals("Alice", domain.members.first().name)
+    }
+
+    @Test
+    fun `FamilyDetailDto with null isMember defaults to false`() {
+        val dto = FamilyDetailDto(
+            id = 1, name = "F", iconUrl = "", familyCode = null,
+            isMember = null, createdAt = null, updatedAt = null, members = null,
+        )
+        assertFalse(dto.toDomain().isMember)
+    }
+
+    @Test
+    fun `FamilyDetailDto with null members maps to empty list`() {
+        val dto = FamilyDetailDto(
+            id = 1, name = "F", iconUrl = "", familyCode = null,
+            isMember = false, createdAt = null, updatedAt = null, members = null,
+        )
+        assertTrue(dto.toDomain().members.isEmpty())
+    }
+
+    // Family.toEntity()
+
+    @Test
+    fun `Family toEntity maps id, name, iconUrl`() {
+        val family = Family(
+            id = "42",
+            name = "My Family",
+            iconUrl = "https://example.com/icon.png",
+        )
+
+        val entity = family.toEntity()
+
+        assertEquals("42", entity.id)
+        assertEquals("My Family", entity.name)
+        assertEquals("https://example.com/icon.png", entity.iconUrl)
+    }
+
+    // PinnedFamilyEntity.toDomain()
+
+    @Test
+    fun `PinnedFamilyEntity toDomain maps id, name, iconUrl and sets isPinned true`() {
+        val entity = PinnedFamilyEntity(
+            id = "7",
+            name = "Pinned Family",
+            iconUrl = "https://example.com/icon.png",
+        )
+
+        val domain = entity.toDomain()
+
+        assertEquals("7", domain.id)
+        assertEquals("Pinned Family", domain.name)
+        assertEquals("https://example.com/icon.png", domain.iconUrl)
+        assertTrue(domain.isPinned)
+        assertTrue(domain.members.isEmpty())
     }
 }
