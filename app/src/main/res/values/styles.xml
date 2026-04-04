@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Widget" />
+    <style name="Widget.Nimons" />
+    <style name="Widget.Nimons.Xml" />
+
+    <style name="Widget.Nimons.Xml.TitleHero">
+        <item name="android:fontFamily">@font/uber_move_text_bold</item>
+        <item name="android:textSize">40sp</item>
+        <item name="android:textColor">@color/xml_text_primary</item>
+        <item name="android:lineHeight">44sp</item>
+        <item name="android:letterSpacing">-0.01</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="Widget.Nimons.Xml.Eyebrow">
+        <item name="android:fontFamily">@font/cal_sans_regular</item>
+        <item name="android:textStyle">bold|italic</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:lineHeight">20sp</item>
+        <item name="android:textColor">@color/xml_text_primary</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="Widget.Nimons.Xml.TitleLarge">
+        <item name="android:fontFamily">@font/manrope_semibold</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:lineHeight">26sp</item>
+        <item name="android:textColor">@color/xml_text_primary</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="Widget.Nimons.Xml.TitleMedium">
+        <item name="android:fontFamily">@font/manrope_semibold</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:lineHeight">24sp</item>
+        <item name="android:textColor">@color/xml_text_primary</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="Widget.Nimons.Xml.HeadlineSmall">
+        <item name="android:fontFamily">@font/cal_sans_regular</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">22sp</item>
+        <item name="android:lineHeight">28sp</item>
+        <item name="android:textColor">@color/xml_text_primary</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="Widget.Nimons.Xml.HeadlineMedium">
+        <item name="android:fontFamily">@font/cal_sans_regular</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">26sp</item>
+        <item name="android:lineHeight">30sp</item>
+        <item name="android:textColor">@color/xml_text_primary</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="Widget.Nimons.Xml.Body">
+        <item name="android:fontFamily">@font/geist_regular</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:lineHeight">22sp</item>
+        <item name="android:textColor">@color/xml_text_primary</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="Widget.Nimons.Xml.BodyLarge">
+        <item name="android:fontFamily">@font/geist_regular</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:lineHeight">24sp</item>
+        <item name="android:textColor">@color/xml_text_primary</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="Widget.Nimons.Xml.BodyMuted">
+        <item name="android:fontFamily">@font/geist_regular</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:lineHeight">22sp</item>
+        <item name="android:textColor">@color/xml_text_secondary</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="Widget.Nimons.Xml.BodySmall">
+        <item name="android:fontFamily">@font/geist_regular</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:lineHeight">18sp</item>
+        <item name="android:textColor">@color/xml_text_secondary</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="Widget.Nimons.Xml.Label">
+        <item name="android:fontFamily">@font/manrope_semibold</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:lineHeight">20sp</item>
+        <item name="android:textColor">@color/xml_text_primary</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="Widget.Nimons.Xml.ButtonText">
+        <item name="android:fontFamily">@font/manrope_semibold</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:lineHeight">20sp</item>
+        <item name="android:textColor">@color/xml_text_primary</item>
+        <item name="android:gravity">center</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="Widget.Nimons.Xml.Field">
+        <item name="android:fontFamily">@font/geist_regular</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:lineHeight">22sp</item>
+        <item name="android:textColor">@color/xml_text_primary</item>
+        <item name="android:textColorHint">@color/xml_text_secondary</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:gravity">center_vertical</item>
+    </style>
+
+    <style name="Widget.Nimons.Xml.TopBarIconButton">
+        <item name="android:layout_width">40dp</item>
+        <item name="android:layout_height">40dp</item>
+        <item name="android:background">@drawable/bg_xml_surface_muted_round</item>
+        <item name="android:tint">@color/xml_text_primary</item>
+        <item name="android:padding">10dp</item>
+        <item name="android:elevation">0dp</item>
+        <item name="android:stateListAnimator">@null</item>
+    </style>
+</resources>

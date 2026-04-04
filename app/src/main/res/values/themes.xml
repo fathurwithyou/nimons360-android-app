@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <style name="Theme.Nimons360.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#F1ECE5</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_empty</item>
+        <item name="windowSplashScreenAnimationDuration">0</item>
+        <item name="postSplashScreenTheme">@style/Theme.Nimons360</item>
+    </style>
 
     <style name="Theme.Nimons360" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>

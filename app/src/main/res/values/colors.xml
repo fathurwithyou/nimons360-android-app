@@ -1,10 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="primary">#2F6F6D</color>
+    <color name="primary_dark">#245755</color>
+    <color name="primary_light">#DCEFED</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="accent">#6EA8D9</color>
+    <color name="background">#F7F8FA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="text_primary">#111827</color>
+    <color name="text_secondary">#5E6875</color>
+    <color name="error_color">#C65A5A</color>
+
+    <color name="xml_warm_background">#F0ECE6</color>
+    <color name="xml_warm_surface">#FFFFFF</color>
+    <color name="xml_warm_surface_muted">#F4F0EA</color>
+    <color name="xml_warm_surface_strong">#EAE5DE</color>
+    <color name="xml_border">#D7D1C8</color>
+    <color name="xml_text_primary">#111111</color>
+    <color name="xml_text_secondary">#4E4E4E</color>
+    <color name="xml_text_tertiary">#6C6C6C</color>
+    <color name="xml_black_top">#222222</color>
+    <color name="xml_black_bottom">#121212</color>
+    <color name="xml_black_border">#141414</color>
+    <color name="xml_black_highlight">#26FFFFFF</color>
+    <color name="xml_black_pressed_highlight">#1AFFFFFF</color>
+    <color name="xml_red">#D14040</color>
+    <color name="xml_success">#2AA76B</color>
+    <color name="xml_marble_one">#19000000</color>
+    <color name="xml_marble_two">#10000000</color>
+    <color name="xml_marble_three">#12000000</color>
+
+    <color name="xml_skeleton_base">#E8E3DC</color>
+    <color name="xml_skeleton_highlight">#F4F0EA</color>
 </resources>
