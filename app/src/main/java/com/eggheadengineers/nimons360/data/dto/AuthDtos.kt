@@ -1,43 +1,51 @@
 package com.eggheadengineers.nimons360.data.dto
 
-import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class LoginRequestDto(
-    @SerializedName("email") val email: String,
-    @SerializedName("password") val password: String,
+    @SerialName("email") val email: String,
+    @SerialName("password") val password: String,
 )
 
+@Serializable
 data class LoginUserDto(
-    @SerializedName("id") val id: Int,
-    @SerializedName("nim") val nim: String?,
-    @SerializedName("email") val email: String,
-    @SerializedName("fullName") val fullName: String,
+    @SerialName("id") val id: Int,
+    @SerialName("nim") val nim: String?,
+    @SerialName("email") val email: String,
+    @SerialName("fullName") val fullName: String,
 )
 
+@Serializable
 data class LoginDataDto(
-    @SerializedName("token") val token: String?,
-    @SerializedName("expiresAt") val expiresAt: String?,
-    @SerializedName("user") val user: LoginUserDto?,
+    @SerialName("token") val token: String?,
+    @SerialName("expiresAt") val expiresAt: String?,
+    @SerialName("user") val user: LoginUserDto?,
 )
 
+@Serializable
 data class ProfileDto(
-    @SerializedName("id") val id: Int,
-    @SerializedName("nim") val nim: String?,
-    @SerializedName("email") val email: String,
-    @SerializedName("fullName") val fullName: String,
-    @SerializedName("createdAt") val createdAt: String?,
-    @SerializedName("updatedAt") val updatedAt: String?,
+    @SerialName("id") val id: Int,
+    @SerialName("nim") val nim: String?,
+    @SerialName("email") val email: String,
+    @SerialName("fullName") val fullName: String,
+    @SerialName("createdAt") val createdAt: String?,
+    @SerialName("updatedAt") val updatedAt: String?,
 )
 
+@Serializable
 data class UpdateProfileRequestDto(
-    @SerializedName("fullName") val fullName: String,
+    @SerialName("fullName") val fullName: String,
 )
 
-// Concrete (non-generic) response wrappers — avoids Gson generic type erasure issues
+// Concrete (non-generic) response wrappers
+@Serializable
 data class LoginApiResponse(
-    @SerializedName("data") val data: LoginDataDto?,
+    @SerialName("data") val data: LoginDataDto?,
 )
 
+@Serializable
 data class ProfileApiResponse(
-    @SerializedName("data") val data: ProfileDto?,
+    @SerialName("data") val data: ProfileDto?,
 )

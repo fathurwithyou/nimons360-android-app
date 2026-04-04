@@ -1,55 +1,64 @@
 package com.eggheadengineers.nimons360.data.dto
 
-import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class FamilyMemberDto(
-    @SerializedName("id") val id: Int?,
-    @SerializedName("fullName") val fullName: String,
-    @SerializedName("email") val email: String,
-    @SerializedName("joinedAt") val joinedAt: String?,
+    @SerialName("id") val id: Int?,
+    @SerialName("fullName") val fullName: String,
+    @SerialName("email") val email: String,
+    @SerialName("joinedAt") val joinedAt: String?,
 )
 
+@Serializable
 data class FamilySummaryDto(
-    @SerializedName("id") val id: Int,
-    @SerializedName("name") val name: String,
-    @SerializedName("iconUrl") val iconUrl: String,
-    @SerializedName("memberCount") val memberCount: Int?,
-    @SerializedName("familyCode") val familyCode: String?,
-    @SerializedName("createdAt") val createdAt: String?,
-    @SerializedName("updatedAt") val updatedAt: String?,
-    @SerializedName("members") val members: List<FamilyMemberDto>?,
+    @SerialName("id") val id: Int,
+    @SerialName("name") val name: String,
+    @SerialName("iconUrl") val iconUrl: String,
+    @SerialName("memberCount") val memberCount: Int?,
+    @SerialName("familyCode") val familyCode: String?,
+    @SerialName("createdAt") val createdAt: String?,
+    @SerialName("updatedAt") val updatedAt: String?,
+    @SerialName("members") val members: List<FamilyMemberDto>?,
 )
 
+@Serializable
 data class FamilyDetailDto(
-    @SerializedName("id") val id: Int,
-    @SerializedName("name") val name: String,
-    @SerializedName("iconUrl") val iconUrl: String,
-    @SerializedName("familyCode") val familyCode: String?,
-    @SerializedName("isMember") val isMember: Boolean?,
-    @SerializedName("createdAt") val createdAt: String?,
-    @SerializedName("updatedAt") val updatedAt: String?,
-    @SerializedName("members") val members: List<FamilyMemberDto>?,
+    @SerialName("id") val id: Int,
+    @SerialName("name") val name: String,
+    @SerialName("iconUrl") val iconUrl: String,
+    @SerialName("familyCode") val familyCode: String?,
+    @SerialName("isMember") val isMember: Boolean?,
+    @SerialName("createdAt") val createdAt: String?,
+    @SerialName("updatedAt") val updatedAt: String?,
+    @SerialName("members") val members: List<FamilyMemberDto>?,
 )
 
+@Serializable
 data class CreateFamilyRequestDto(
-    @SerializedName("name") val name: String,
-    @SerializedName("iconUrl") val iconUrl: String,
+    @SerialName("name") val name: String,
+    @SerialName("iconUrl") val iconUrl: String,
 )
 
+@Serializable
 data class JoinFamilyRequestDto(
-    @SerializedName("familyId") val familyId: Int,
-    @SerializedName("familyCode") val familyCode: String,
+    @SerialName("familyId") val familyId: Int,
+    @SerialName("familyCode") val familyCode: String,
 )
 
+@Serializable
 data class LeaveFamilyRequestDto(
-    @SerializedName("familyId") val familyId: Int,
+    @SerialName("familyId") val familyId: Int,
 )
 
 // Concrete (non-generic) response wrappers
+@Serializable
 data class FamilyListApiResponse(
-    @SerializedName("data") val data: List<FamilySummaryDto>?,
+    @SerialName("data") val data: List<FamilySummaryDto>?,
 )
 
+@Serializable
 data class FamilyDetailApiResponse(
-    @SerializedName("data") val data: FamilyDetailDto?,
+    @SerialName("data") val data: FamilyDetailDto?,
 )
