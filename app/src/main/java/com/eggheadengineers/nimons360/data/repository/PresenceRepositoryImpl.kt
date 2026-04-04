@@ -7,13 +7,14 @@ import com.eggheadengineers.nimons360.data.dto.UpdatePresencePayloadDto
 import com.eggheadengineers.nimons360.domain.mapper.toDomain
 import com.eggheadengineers.nimons360.domain.model.MemberPresence
 import com.eggheadengineers.nimons360.domain.repository.PresenceRepository
-import com.google.gson.Gson
-import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -35,7 +36,7 @@ class PresenceRepositoryImpl(
         private const val RECONNECT_DELAY_MS = 3000L
     }
 
-    private val gson = Gson()
+    private val json = Json { ignoreUnknownKeys = true }
     private val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
         timeZone = TimeZone.getTimeZone("UTC")
     }
@@ -98,12 +99,12 @@ class PresenceRepositoryImpl(
 
     private fun handleMessage(text: String) {
         runCatching {
-            val envelope = gson.fromJson(text, JsonObject::class.java)
-            val type = envelope.get("type")?.asString ?: return
+            val envelope = json.parseToJsonElement(text).jsonObject
+            val type = envelope["type"]?.jsonPrimitive?.content ?: return
             Log.d(TAG, "Message type: $type")
             if (type == "member_presence_updated") {
-                val payloadJson = envelope.get("payload")?.toString() ?: return
-                val payload = gson.fromJson(payloadJson, MemberPresenceUpdatedPayloadDto::class.java)
+                val payloadJson = envelope["payload"]?.toString() ?: return
+                val payload = json.decodeFromString<MemberPresenceUpdatedPayloadDto>(payloadJson)
                 val presence = payload.toDomain()
                 Log.d(TAG, "Presence update: userId=${presence.userId} name=${presence.name}")
                 if (presence.userId.isNotEmpty()) {
@@ -137,12 +138,17 @@ class PresenceRepositoryImpl(
             isCharging = charging,
             internetStatus = internetStatus,
         )
-        val envelope = mapOf(
-            "type" to "update_presence",
-            "payload" to payload,
-            "timestamp" to isoFormat.format(Date()),
+        val envelope = json.encodeToString(
+            kotlinx.serialization.json.JsonObject.serializer(),
+            kotlinx.serialization.json.JsonObject(
+                mapOf(
+                    "type" to kotlinx.serialization.json.JsonPrimitive("update_presence"),
+                    "payload" to json.encodeToJsonElement(UpdatePresencePayloadDto.serializer(), payload),
+                    "timestamp" to kotlinx.serialization.json.JsonPrimitive(isoFormat.format(Date())),
+                )
+            )
         )
-        webSocket?.send(gson.toJson(envelope))
+        webSocket?.send(envelope)
     }
 
     override fun observeMembers(): Flow<Map<String, MemberPresence>> = _members.asStateFlow()

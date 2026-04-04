@@ -1,23 +1,26 @@
 package com.eggheadengineers.nimons360.data.network
 
-import com.google.gson.Gson
-import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import retrofit2.Response
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.net.ssl.SSLException
 
+@Serializable
 private data class ApiErrorEnvelope(
-    @SerializedName("error") val error: ApiErrorBody?,
+    @SerialName("error") val error: ApiErrorBody?,
 )
 
+@Serializable
 private data class ApiErrorBody(
-    @SerializedName("code") val code: String?,
-    @SerializedName("message") val message: String?,
+    @SerialName("code") val code: String?,
+    @SerialName("message") val message: String?,
 )
 
-private val gson = Gson()
+private val json = Json { ignoreUnknownKeys = true }
 
 fun Response<*>.requireSuccess(defaultMessage: String) {
     if (isSuccessful) return
@@ -26,7 +29,7 @@ fun Response<*>.requireSuccess(defaultMessage: String) {
         errorBody()
             ?.string()
             ?.takeIf { it.isNotBlank() }
-            ?.let { body -> gson.fromJson(body, ApiErrorEnvelope::class.java) }
+            ?.let { body -> json.decodeFromString<ApiErrorEnvelope>(body) }
             ?.error
             ?.message
             ?.takeIf { it.isNotBlank() }
