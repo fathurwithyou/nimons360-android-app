@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="tag_xml_initial_padding" type="id" />
+    <item name="tag_xml_status_inset_listener" type="id" />
+    <item name="tag_xml_nav_inset_listener" type="id" />
+    <item name="shimmer_animator_tag" type="id" />
+</resources>
