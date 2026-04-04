@@ -13,6 +13,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.OkHttpClient
@@ -139,12 +142,12 @@ class PresenceRepositoryImpl(
             internetStatus = internetStatus,
         )
         val envelope = json.encodeToString(
-            kotlinx.serialization.json.JsonObject.serializer(),
-            kotlinx.serialization.json.JsonObject(
+            JsonObject.serializer(),
+            JsonObject(
                 mapOf(
-                    "type" to kotlinx.serialization.json.JsonPrimitive("update_presence"),
+                    "type" to JsonPrimitive("update_presence"),
                     "payload" to json.encodeToJsonElement(UpdatePresencePayloadDto.serializer(), payload),
-                    "timestamp" to kotlinx.serialization.json.JsonPrimitive(isoFormat.format(Date())),
+                    "timestamp" to JsonPrimitive(isoFormat.format(Date())),
                 )
             )
         )
