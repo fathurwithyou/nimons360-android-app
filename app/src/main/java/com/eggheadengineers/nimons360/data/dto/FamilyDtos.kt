@@ -5,10 +5,10 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class FamilyMemberDto(
-    @SerialName("id") val id: Int?,
+    @SerialName("id") val id: Int? = null,
     @SerialName("fullName") val fullName: String,
     @SerialName("email") val email: String,
-    @SerialName("joinedAt") val joinedAt: String?,
+    @SerialName("joinedAt") val joinedAt: String? = null,
 )
 
 @Serializable
@@ -16,11 +16,11 @@ data class FamilySummaryDto(
     @SerialName("id") val id: Int,
     @SerialName("name") val name: String,
     @SerialName("iconUrl") val iconUrl: String,
-    @SerialName("memberCount") val memberCount: Int?,
-    @SerialName("familyCode") val familyCode: String?,
-    @SerialName("createdAt") val createdAt: String?,
-    @SerialName("updatedAt") val updatedAt: String?,
-    @SerialName("members") val members: List<FamilyMemberDto>?,
+    @SerialName("memberCount") val memberCount: Int? = null,
+    @SerialName("familyCode") val familyCode: String? = null,
+    @SerialName("createdAt") val createdAt: String? = null,
+    @SerialName("updatedAt") val updatedAt: String? = null,
+    @SerialName("members") val members: List<FamilyMemberDto>? = null,
 )
 
 @Serializable
@@ -28,11 +28,11 @@ data class FamilyDetailDto(
     @SerialName("id") val id: Int,
     @SerialName("name") val name: String,
     @SerialName("iconUrl") val iconUrl: String,
-    @SerialName("familyCode") val familyCode: String?,
-    @SerialName("isMember") val isMember: Boolean?,
-    @SerialName("createdAt") val createdAt: String?,
-    @SerialName("updatedAt") val updatedAt: String?,
-    @SerialName("members") val members: List<FamilyMemberDto>?,
+    @SerialName("familyCode") val familyCode: String? = null,
+    @SerialName("isMember") val isMember: Boolean? = null,
+    @SerialName("createdAt") val createdAt: String? = null,
+    @SerialName("updatedAt") val updatedAt: String? = null,
+    @SerialName("members") val members: List<FamilyMemberDto>? = null,
 )
 
 @Serializable
