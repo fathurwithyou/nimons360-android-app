@@ -7,5 +7,5 @@
         <item name="postSplashScreenTheme">@style/Theme.Nimons360</item>
     </style>
 
-    <style name="Theme.Nimons360" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.Nimons360" parent="Theme.AppCompat.Light.NoActionBar" />
 </resources>
