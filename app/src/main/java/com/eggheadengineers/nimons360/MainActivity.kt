@@ -79,7 +79,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun NimonsApp(app: NimonsApplication, startDestination) {
+private fun NimonsApp(app: NimonsApplication, startDestination: String) {
     val navController = rememberNavController()
     var showStartupSplash by rememberSaveable { mutableStateOf(true) }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -100,7 +100,7 @@ private fun NimonsApp(app: NimonsApplication, startDestination) {
 
         when (networkStatus) {
             NetworkStatus.OFFLINE -> {
-                cconnectionBannerState = ConnectionBannerState(connected = false)
+                connectionBannerState = ConnectionBannerState(connected = false)
             }
 
             NetworkStatus.WIFI, NetworkStatus.MOBILE -> {
