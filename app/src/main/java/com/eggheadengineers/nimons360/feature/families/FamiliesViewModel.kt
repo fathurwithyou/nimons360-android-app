@@ -54,7 +54,7 @@ class FamiliesViewModel(private val familyRepository: FamilyRepository) : ViewMo
             }
         }
         viewModelScope.launch {
-            familyRepository.observeFamilyChange().collect {
+            familyRepository.observeFamilyChanges().collect {
                 load()
             }
         }
@@ -98,16 +98,13 @@ class FamiliesViewModel(private val familyRepository: FamilyRepository) : ViewMo
         _uiState.update { it.copy(searchQuery = query) }
     }
 
-    fun togglePin(familyId: String) {
+    fun togglePin(family: Family) {
         viewModelScope.launch {
-            if (familyId in uiState.value.pinnedIds) {
-                familyRepository.unpinFamily(familyId)
-            } else {
-                familyRepository.pinFamily(familyId)
-            }
+            if (family.id in _uiState.value.pinnedIds) familyRepository.unpinFamily(family.id)
+            else familyRepository.pinFamily(family)
         }
     }
-
+    
     class Factory(private val repo: FamilyRepository) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>) = FamiliesViewModel(repo) as T

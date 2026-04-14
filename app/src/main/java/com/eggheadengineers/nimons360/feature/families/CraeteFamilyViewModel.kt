@@ -13,7 +13,7 @@ import com.eggheadengineers.nimons360.domain.repository.FamilyRepository
 sealed interface CreateFamilyUiState {
     data object Idle : CreateFamilyUiState
     data object Loading : CreateFamilyUiState
-    data class Success(val family: FamilyDetail) : CreateFamilyUiState
+    data class Success(val familyId: String) : CreateFamilyUiState
     data class Error(val message: String) : CreateFamilyUiState
 }
 

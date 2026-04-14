@@ -14,13 +14,13 @@ import com.eggheadengineers.nimons360.domain.model.Family
 import com.eggheadengineers.nimons360.domain.repository.FamilyRepository
 
 data class HomeUiState(
-    val myFamilies: List<String> = emptyList(),
-    val discoverFamilies: List<String> = emptyList(),
+    val myFamilies: List<Family> = emptyList(),
+    val discoverFamilies: List<Family> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
 )
 
-class HomeViewModel : ViewModel() {
+class HomeViewModel(private val familyRepository: FamilyRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState
     private var loadJob: Job? = null
@@ -28,7 +28,7 @@ class HomeViewModel : ViewModel() {
 
     init {
         viewModelScope.launch {
-            familyRepository.observeFamilyChange().collect {
+            familyRepository.observeFamilyChanges().collect {
                 load()
             }
         }
@@ -60,9 +60,9 @@ class HomeViewModel : ViewModel() {
         }
     }
 
-    class Factory(private val familyRepository: FamilyRepository) : ViewModelProvider.Factory {
+    class Factory(private val repo: FamilyRepository) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>) = HomeViewModel() as T
+        override fun <T : ViewModel> create(modelClass: Class<T>) = HomeViewModel(repo) as T
     }
 
     private companion object {

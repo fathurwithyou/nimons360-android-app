@@ -11,7 +11,7 @@ import com.eggheadengineers.nimons360.domain.model.FamilyDetail
 import com.eggheadengineers.nimons360.domain.repository.FamilyRepository
 
 data class FamilyDetailUiState(
-    val family: FamilyDetail? = null,
+    val detail: FamilyDetail? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
     val feedback: FamilyDetailFeedback? = null,
@@ -20,7 +20,7 @@ data class FamilyDetailUiState(
 data class FamilyDetailFeedback(
     val title: String,
     val message: String,
-    val isSuccess: Boolean,    
+    val isSuccess: Boolean,
 )
 
 class FamilyDetailViewModel(
