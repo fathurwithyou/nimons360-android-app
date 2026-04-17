@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/familiesRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/xml_warm_background">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="220dp"
+        android:background="@drawable/bg_xml_marble_hero" />
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/familiesRefresh"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/familiesHeroContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="top"
+                    android:orientation="horizontal"
+                    android:paddingStart="@dimen/screen_horizontal"
+                    android:paddingTop="@dimen/space_4"
+                    android:paddingEnd="@dimen/screen_horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/Widget.Nimons.Xml.TitleHero"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Browse" />
+
+                        <TextView
+                            style="@style/Widget.Nimons.Xml.TitleHero"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="-6dp"
+                            android:text="Families"
+                            android:textStyle="italic" />
+
+                        <TextView
+                            style="@style/Widget.Nimons.Xml.Body"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_2"
+                            android:text="Search, pin, and manage your family spaces."
+                            android:textColor="@color/xml_text_secondary" />
+                    </LinearLayout>
+
+                    <ImageButton
+                        android:id="@+id/familiesProfileButton"
+                        style="@style/Widget.Nimons.Xml.TopBarIconButton"
+                        android:layout_marginStart="@dimen/space_4"
+                        android:contentDescription="Profile"
+                        android:src="@drawable/ic_xml_account_circle" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_5"
+                    android:background="@drawable/bg_xml_sheet_top_round"
+                    android:orientation="vertical"
+                    android:paddingStart="@dimen/screen_horizontal"
+                    android:paddingTop="@dimen/space_6"
+                    android:paddingEnd="@dimen/screen_horizontal"
+                    android:paddingBottom="@dimen/space_6">
+
+                    <EditText
+                        android:id="@+id/familiesSearchInput"
+                        style="@style/Widget.Nimons.Xml.Field"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:background="@drawable/bg_xml_surface_muted"
+                        android:drawableStart="@drawable/ic_xml_search"
+                        android:drawablePadding="@dimen/space_3"
+                        android:drawableTint="@color/xml_text_secondary"
+                        android:hint="Search families"
+                        android:imeOptions="actionDone"
+                        android:inputType="text"
+                        android:paddingStart="@dimen/space_4"
+                        android:paddingEnd="@dimen/space_4"
+                        android:singleLine="true" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_3"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/familiesAllButton"
+                            style="@style/Widget.Nimons.Xml.ButtonText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="32dp"
+                            android:background="@drawable/bg_xml_filter_selected"
+                            android:minWidth="0dp"
+                            android:paddingStart="@dimen/space_3"
+                            android:paddingEnd="@dimen/space_3"
+                            android:text="All"
+                            android:textColor="@android:color/white" />
+
+                        <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/familiesMineButton"
+                            style="@style/Widget.Nimons.Xml.ButtonText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="32dp"
+                            android:layout_marginStart="@dimen/space_2"
+                            android:background="@drawable/bg_xml_filter_unselected"
+                            android:minWidth="0dp"
+                            android:paddingStart="@dimen/space_3"
+                            android:paddingEnd="@dimen/space_3"
+                            android:text="My families"
+                            android:textColor="@color/xml_text_primary" />
+
+                        <TextView
+                            android:id="@+id/familiesResultCount"
+                            style="@style/Widget.Nimons.Xml.BodySmall"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/space_3"
+                            android:layout_weight="1"
+                            android:gravity="end"
+                            android:text="0 results" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/familiesListContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_5"
+                        android:orientation="vertical" />
+
+                    <LinearLayout
+                        android:id="@+id/familiesSkeleton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_5"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <include layout="@layout/item_skeleton_family_row" />
+                        <include layout="@layout/item_skeleton_family_row" />
+                        <include layout="@layout/item_skeleton_family_row" />
+                        <include layout="@layout/item_skeleton_family_row" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/familiesEmptyText"
+                        style="@style/Widget.Nimons.Xml.Body"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_4"
+                        android:background="@drawable/bg_xml_surface_muted"
+                        android:padding="@dimen/space_4"
+                        android:text="No families found."
+                        android:textColor="@color/xml_text_secondary"
+                        android:visibility="gone" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="@dimen/space_6"
+                        android:layout_marginBottom="@dimen/space_5"
+                        android:background="@color/xml_border" />
+
+                    <TextView
+                        style="@style/Widget.Nimons.Xml.TitleMedium"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Want to make your own family?" />
+
+                    <TextView
+                        style="@style/Widget.Nimons.Xml.BodySmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_1"
+                        android:text="Create a new space and invite members with your own code." />
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/familiesCreateButton"
+                        style="@style/Widget.Nimons.Xml.ButtonText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="@dimen/button_compact_height"
+                        android:layout_marginTop="@dimen/space_3"
+                        android:background="@drawable/bg_xml_dark_button_selector"
+                        android:minWidth="0dp"
+                        android:paddingStart="@dimen/space_4"
+                        android:paddingEnd="@dimen/space_4"
+                        android:text="Create family"
+                        android:textColor="@android:color/white" />
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+
+</FrameLayout>
