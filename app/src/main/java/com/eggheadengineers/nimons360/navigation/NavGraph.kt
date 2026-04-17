@@ -101,7 +101,7 @@ fun NimonsNavGraph(
 
         composable(Screen.Profile.route) {
             val vm: ProfileViewModel = viewModel(
-                factory = ProfileViewModel.Factory(app.profileRepository, app.authRepository)
+                factory = ProfileViewModel.Factory( app.authRepository, app.profileRepository)
             )
             ProfileScreen(
                 viewModel = vm,

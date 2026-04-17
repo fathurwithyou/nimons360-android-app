@@ -17,8 +17,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,7 +24,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -94,6 +91,7 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.CustomZoomButtonsController
 import kotlin.math.roundToInt
 import android.graphics.Color as AndroidColor
 import com.eggheadengineers.nimons360.ui.theme.Surface as SurfaceColor
@@ -419,16 +417,21 @@ private fun OsmMapView(
             MapView(context).also { mapView ->
                 mapView.setTileSource(TileSourceFactory.MAPNIK)
                 mapView.setMultiTouchControls(true)
-                mapView.setBuiltInZoomControls(false)
+                mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
                 mapView.controller.setZoom(15.0)
 
-                // Prevent Compose from intercepting touch events so pinch/pan works
                 mapView.setOnTouchListener { v, event ->
                     when (event.action) {
-                        MotionEvent.ACTION_DOWN ->
+                        MotionEvent.ACTION_DOWN -> {
                             v.parent?.requestDisallowInterceptTouchEvent(true)
-                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL ->
+                        }
+                        MotionEvent.ACTION_UP -> {
+                            v.performClick()
                             v.parent?.requestDisallowInterceptTouchEvent(false)
+                        }
+                        MotionEvent.ACTION_CANCEL -> {
+                            v.parent?.requestDisallowInterceptTouchEvent(false)
+                        }
                     }
                     false
                 }
