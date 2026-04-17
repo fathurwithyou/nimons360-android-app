@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:minHeight="68dp"
+        android:orientation="horizontal"
+        android:paddingTop="@dimen/space_3"
+        android:paddingBottom="@dimen/space_3">
+
+        <!-- Icon placeholder -->
+        <View
+            android:id="@+id/skeletonIcon"
+            android:layout_width="@dimen/family_icon_tile"
+            android:layout_height="@dimen/family_icon_tile" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/space_3"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <!-- Title placeholder -->
+            <View
+                android:id="@+id/skeletonTitle"
+                android:layout_width="140dp"
+                android:layout_height="16dp" />
+
+            <!-- Subtitle placeholder -->
+            <View
+                android:id="@+id/skeletonSubtitle"
+                android:layout_width="90dp"
+                android:layout_height="12dp"
+                android:layout_marginTop="6dp" />
+        </LinearLayout>
+
+        <!-- Avatar dots placeholder -->
+        <View
+            android:id="@+id/skeletonAvatars"
+            android:layout_width="56dp"
+            android:layout_height="20dp" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/xml_border" />
+</LinearLayout>

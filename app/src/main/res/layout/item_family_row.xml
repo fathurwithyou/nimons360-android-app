@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/familyRowRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/familyRowContent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:minHeight="68dp"
+        android:orientation="horizontal"
+        android:paddingTop="@dimen/space_3"
+        android:paddingBottom="@dimen/space_3">
+
+        <FrameLayout
+            android:layout_width="@dimen/family_icon_tile"
+            android:layout_height="@dimen/family_icon_tile"
+            android:background="@drawable/bg_xml_icon_tile">
+
+            <ImageView
+                android:id="@+id/familyIcon"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:scaleType="centerInside" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/space_3"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/familyName"
+                style="@style/Widget.Nimons.Xml.TitleMedium"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1" />
+
+            <TextView
+                android:id="@+id/familyMeta"
+                style="@style/Widget.Nimons.Xml.BodySmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/xml_text_secondary" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/familyAvatarGroup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/space_2"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/familyAvatarOne"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:background="@drawable/bg_xml_avatar_circle"
+                android:fontFamily="@font/geist_medium"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:textColor="@color/xml_text_primary"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/familyAvatarTwo"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/bg_xml_avatar_circle"
+                android:fontFamily="@font/geist_medium"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:textColor="@color/xml_text_primary"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/familyAvatarThree"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/bg_xml_avatar_circle"
+                android:fontFamily="@font/geist_medium"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:textColor="@color/xml_text_primary"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/familyAvatarOverflow"
+                style="@style/Widget.Nimons.Xml.BodySmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:textColor="@color/xml_text_secondary" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/familyPinButton"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/app_name"
+            android:padding="8dp"
+            android:src="@drawable/ic_xml_pin_outline" />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/familyDivider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/xml_border" />
+</LinearLayout>
