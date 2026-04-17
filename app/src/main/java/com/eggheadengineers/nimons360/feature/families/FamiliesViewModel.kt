@@ -65,7 +65,7 @@ class FamiliesViewModel(private val familyRepository: FamilyRepository) : ViewMo
             try {
                 withTimeout(LOAD_TIMEOUT_MS) {
                     val result = when (uiState.value.filter) {
-                        FamiliesFilter.ALL -> familyRepository.getDiscoverFamilies()
+                        FamiliesFilter.ALL -> familyRepository.getAllFamilies()
                         FamiliesFilter.MY_FAMILIES -> familyRepository.getMyFamilies()
                     }
                     _uiState.update {

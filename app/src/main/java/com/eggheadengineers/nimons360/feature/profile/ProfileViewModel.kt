@@ -58,7 +58,8 @@ class ProfileViewModel(
                 onFailure = {
                     _uiState.value = uiState.value.copy(
                         isLoading = false,
-                        updateMessage = it.userFriendlyMessage("Failed to update profile"))
+                        error = it.userFriendlyMessage("Failed to update profile")
+                    )
                 }
             )
         }
