@@ -51,12 +51,8 @@ class MapViewModelTest {
 
     private fun createViewModel(): MapViewModel {
         // We can't easily create a MapViewModel due to ConnectivityObserver/LocationTracker requiring Context.
-        // Instead, test the pure logic in MapUiState directly.
-        // For the ViewModel, we test what we can through the UiState data class.
         throw UnsupportedOperationException("ViewModel requires Android context dependencies")
     }
-
-    // ── MapUiState.filteredMembers tests ──
 
     @Test
     fun `filteredMembers returns all members when no family selected`() {
@@ -148,8 +144,6 @@ class MapViewModelTest {
         assertTrue(state.filteredMembers.isEmpty())
     }
 
-    // ── PresenceRepository stale cleanup tests ──
-
     @Test
     fun `removeStaleMembers removes old entries`() {
         val now = System.currentTimeMillis()
@@ -202,7 +196,6 @@ class MapViewModelTest {
     )
 }
 
-// ── Fakes ──
 
 class FakePresenceRepository : PresenceRepository {
     val membersFlow = MutableStateFlow<Map<String, MemberPresence>>(emptyMap())
