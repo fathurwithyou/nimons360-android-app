@@ -104,7 +104,7 @@ private sealed interface MapBottomPanelState {
 }
 
 @Composable
-fun MapScreen(viewModel: MapViewModel) {
+fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
@@ -173,6 +173,19 @@ fun MapScreen(viewModel: MapViewModel) {
 
         MapOverlayScrims()
 
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .statusBarsPadding()
+                .padding(end = AppGrid.ScreenHorizontal, top = AppGrid.Space3),
+        ) {
+            AvatarCircle(
+                initial = currentUserName.firstOrNull()?.uppercaseChar() ?: 'Y',
+                size = 40,
+                modifier = Modifier.clickable { onProfileClick() },
+            )
+        }
+
         Column(
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -180,7 +193,7 @@ fun MapScreen(viewModel: MapViewModel) {
                 .padding(
                     start = AppGrid.ScreenHorizontal,
                     top = AppGrid.Space3,
-                    end = AppGrid.ScreenHorizontal,
+                    end = AppGrid.ScreenHorizontal + 52.dp,
                 ),
             verticalArrangement = Arrangement.spacedBy(AppGrid.Space3),
         ) {
@@ -229,7 +242,12 @@ fun MapScreen(viewModel: MapViewModel) {
                         val lat = state.myLat
                         val lng = state.myLng
                         if (lat != 0.0 || lng != 0.0) {
-                            mapViewRef.value?.controller?.animateTo(GeoPoint(lat, lng))
+                            mapViewRef.value?.let { mapView ->
+                                if (mapView.zoomLevelDouble < 13.0) {
+                                    mapView.controller.setZoom(15.0)
+                                }
+                                mapView.controller.setCenter(GeoPoint(lat, lng))
+                            }
                         }
                     },
                 )

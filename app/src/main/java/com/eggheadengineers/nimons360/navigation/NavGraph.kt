@@ -73,7 +73,10 @@ fun NimonsNavGraph(
                     app.orientationProvider, app.batteryProvider, app.connectivityObserver,
                 )
             )
-            MapScreen(viewModel = vm)
+            MapScreen(
+                viewModel = vm,
+                onProfileClick = { navController.navigate(Screen.Profile.route) },
+            )
         }
 
         composable(Screen.Families.route) {
