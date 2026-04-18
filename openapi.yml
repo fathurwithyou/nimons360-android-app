@@ -45,13 +45,28 @@ components:
               properties:
                 token:
                   type: string
+                expiresAt:
+                  type: string
+                  format: date-time
+                user:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    nim:
+                      type: string
+                    email:
+                      type: string
+                      format: email
+                    fullName:
+                      type: string
 
     Profile:
       type: object
       properties:
         id:
-          type: string
-        name:
+          type: integer
+        fullName:
           type: string
         email:
           type: string
@@ -76,25 +91,37 @@ components:
       type: object
       properties:
         id:
-          type: string
-        name:
+          type: integer
+          nullable: true
+        fullName:
           type: string
         email:
           type: string
           format: email
+        joinedAt:
+          type: string
+          format: date-time
+          nullable: true
 
     FamilySummary:
       type: object
       properties:
         id:
-          type: string
+          type: integer
         name:
           type: string
-        icon:
+        iconUrl:
           type: string
           format: uri
+        memberCount:
+          type: integer
+          nullable: true
+        familyCode:
+          type: string
+          nullable: true
         members:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/FamilyMember'
 
@@ -102,19 +129,21 @@ components:
       type: object
       properties:
         id:
-          type: string
+          type: integer
         name:
           type: string
-        icon:
+        iconUrl:
           type: string
           format: uri
-        code:
+        familyCode:
           type: string
           nullable: true
         isMember:
           type: boolean
+          nullable: true
         members:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/FamilyMember'
 
@@ -138,11 +167,11 @@ components:
 
     CreateFamilyRequest:
       type: object
-      required: [name, icon]
+      required: [name, iconUrl]
       properties:
         name:
           type: string
-        icon:
+        iconUrl:
           type: string
           format: uri
           description: |
@@ -158,11 +187,11 @@ components:
 
     JoinFamilyRequest:
       type: object
-      required: [familyId, code]
+      required: [familyId, familyCode]
       properties:
         familyId:
-          type: string
-        code:
+          type: integer
+        familyCode:
           type: string
           minLength: 6
           maxLength: 6
@@ -172,7 +201,7 @@ components:
       required: [familyId]
       properties:
         familyId:
-          type: string
+          type: integer
 
 security:
   - BearerAuth: []
@@ -198,8 +227,8 @@ paths:
                 $ref: '#/components/schemas/LoginResponse'
         '401':
           description: Invalid credentials
-        '409':
-          description: Unauthorized / Token expired
+        '401':
+          description: Unauthorized
 
   /api/me:
     get:
@@ -212,7 +241,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProfileResponse'
-        '409':
+        '401':
           description: Unauthorized
     patch:
       summary: Update current user profile
@@ -230,7 +259,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProfileResponse'
-        '409':
+        '401':
           description: Unauthorized
 
   /api/me/families:
@@ -244,7 +273,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FamilyListResponse'
-        '409':
+        '401':
           description: Unauthorized
 
   /api/families/discover:
@@ -258,7 +287,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FamilyListResponse'
-        '409':
+        '401':
           description: Unauthorized
 
   /api/families:
@@ -272,7 +301,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FamilyListResponse'
-        '409':
+        '401':
           description: Unauthorized
     post:
       summary: Create a new family
@@ -290,7 +319,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FamilyDetailResponse'
-        '409':
+        '401':
           description: Unauthorized
 
   /api/families/{familyId}:
@@ -312,7 +341,7 @@ paths:
                 $ref: '#/components/schemas/FamilyDetailResponse'
         '404':
           description: Family not found
-        '409':
+        '401':
           description: Unauthorized
 
   /api/families/join:
@@ -334,7 +363,7 @@ paths:
                 $ref: '#/components/schemas/ApiResponse'
         '400':
           description: Invalid code
-        '409':
+        '401':
           description: Unauthorized
 
   /api/families/leave:
@@ -354,5 +383,5 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
-        '409':
+        '401':
           description: Unauthorized
