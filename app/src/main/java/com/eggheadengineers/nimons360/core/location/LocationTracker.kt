@@ -17,7 +17,8 @@ class LocationTracker(private val context: Context) {
     fun locationUpdates(minTimeMs: Long = 3000L, minDistanceM: Float = 0f): Flow<Location> = callbackFlow {
         val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
-        val hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+        val hasPermission =
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
         if (!hasPermission) {
@@ -25,22 +26,31 @@ class LocationTracker(private val context: Context) {
             return@callbackFlow
         }
 
-        val listener = object : LocationListener {
-            override fun onLocationChanged(location: Location) { trySend(location) }
-            @Deprecated("Deprecated in Java")
-            override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
+        val enabledProviders = listOf(
+            LocationManager.GPS_PROVIDER,
+            LocationManager.NETWORK_PROVIDER,
+        ).filter { lm.isProviderEnabled(it) }
+
+        if (enabledProviders.isEmpty()) {
+            close()
+            return@callbackFlow
         }
 
-        val provider = when {
-            lm.isProviderEnabled(LocationManager.GPS_PROVIDER) -> LocationManager.GPS_PROVIDER
-            lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER) -> LocationManager.NETWORK_PROVIDER
-            else -> { close(); return@callbackFlow }
+        enabledProviders
+            .mapNotNull { lm.getLastKnownLocation(it) }
+            .maxByOrNull { it.time }
+            ?.let { trySend(it) }
+
+        val listeners = enabledProviders.map { provider ->
+            object : LocationListener {
+                override fun onLocationChanged(location: Location) { trySend(location) }
+                @Deprecated("Deprecated in Java")
+                override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
+            }.also { listener ->
+                lm.requestLocationUpdates(provider, minTimeMs, minDistanceM, listener)
+            }
         }
 
-        // Emit last known location immediately
-        lm.getLastKnownLocation(provider)?.let { trySend(it) }
-
-        lm.requestLocationUpdates(provider, minTimeMs, minDistanceM, listener)
-        awaitClose { lm.removeUpdates(listener) }
+        awaitClose { listeners.forEach { lm.removeUpdates(it) } }
     }
 }
