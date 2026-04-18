@@ -30,7 +30,7 @@ data class UpdatePresencePayloadDto(
 
 @Serializable
 data class MemberPresenceUpdatedPayloadDto(
-    @SerialName("userId") val userId: String? = null,
+    @SerialName("userId") val userId: Int? = null,
     @SerialName("id") val id: String? = null,
     @SerialName("fullName") val fullName: String? = null,
     @SerialName("email") val email: String? = null,

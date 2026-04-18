@@ -27,7 +27,7 @@ fun FamilyDetailDto.toDomain() = FamilyDetail(
 )
 
 fun MemberPresenceUpdatedPayloadDto.toDomain() = MemberPresence(
-    userId = userId ?: id ?: "",
+    userId = userId?.toString() ?: id ?: "",
     name = fullName ?: "",
     email = email ?: "",
     lat = latitude ?: 0.0,
