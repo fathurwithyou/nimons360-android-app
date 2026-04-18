@@ -59,12 +59,46 @@ class MapViewModel(
     private val batteryProvider: BatteryProvider,
     private val connectivityObserver: ConnectivityObserver,
 ) : ViewModel() {
+    companion object {
+        private const val PRESENCE_FAMILY_REFRESH_COOLDOWN_MS = 8_000L
+    }
+
     private val _uiState = MutableStateFlow(MapUiState())
     val uiState: StateFlow<MapUiState> = _uiState
 
     private var presenceJob: Job? = null
     private var staleCleanupJob: Job? = null
+    private var loadFamiliesJob: Job? = null
     private var trackingStarted = false
+    private var lastPresenceDrivenFamiliesRefreshMs = 0L
+
+    private fun refreshFamiliesForNewMembers(
+        previousMembers: Map<String, MemberPresence>,
+        latestMembers: Map<String, MemberPresence>,
+        families: List<Family>,
+    ): Boolean {
+        if (latestMembers.isEmpty()) return false
+        val newMemberIds = latestMembers.keys - previousMembers.keys
+        if (newMemberIds.isEmpty()) return false
+
+        val knownFamilyMemberIds = families
+            .flatMap { it.members }
+            .map { it.id }
+            .toSet()
+
+        return newMemberIds.any { it !in knownFamilyMemberIds }
+    }
+
+    private fun refreshFamiliesForSelectedFilter(
+        selectedFamilyIds: Set<String>,
+        latestMembers: Map<String, MemberPresence>,
+    ): Boolean {
+        if (selectedFamilyIds.isEmpty()) return false
+        if (latestMembers.isEmpty()) return false
+
+        val now = System.currentTimeMillis()
+        return now - lastPresenceDrivenFamiliesRefreshMs >= PRESENCE_FAMILY_REFRESH_COOLDOWN_MS
+    }
 
     init {
         loadFamilies()
@@ -79,7 +113,8 @@ class MapViewModel(
     }
 
     private fun loadFamilies() {
-        viewModelScope.launch {
+        if (loadFamiliesJob?.isActive == true) return
+        loadFamiliesJob = viewModelScope.launch {
             familyRepository.getMyFamilies().onSuccess { families ->
                 _uiState.update { it.copy(families = families) }
             }
@@ -99,6 +134,7 @@ class MapViewModel(
             }
             state.copy(selectedFamilyIds = newIds)
         }
+        loadFamilies()
     }
 
     fun onPermissionGranted() {
@@ -114,7 +150,24 @@ class MapViewModel(
 
         viewModelScope.launch {
             presenceRepository.observeMembers().collect { members ->
+                val previousState = _uiState.value
+                val refreshForNewMembers = refreshFamiliesForNewMembers(
+                    previousMembers = previousState.members,
+                    latestMembers = members,
+                    families = previousState.families,
+                )
+                val refreshForSelectedFilter = refreshFamiliesForSelectedFilter(
+                    selectedFamilyIds = previousState.selectedFamilyIds,
+                    latestMembers = members,
+                )
+                val refreshFamilies = refreshForNewMembers || refreshForSelectedFilter
+
                 _uiState.update { it.copy(members = members) }
+
+                if (refreshFamilies) {
+                    lastPresenceDrivenFamiliesRefreshMs = System.currentTimeMillis()
+                    loadFamilies()
+                }
             }
         }
 
