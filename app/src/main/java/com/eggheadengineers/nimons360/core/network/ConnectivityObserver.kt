@@ -24,15 +24,14 @@ class ConnectivityObserver(context: Context) {
             .build()
         cm.registerNetworkCallback(request, object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
-                val caps = cm.getNetworkCapabilities(network)
-                _status.value = if (caps != null) resolveTransport(caps) else currentStatus()
+                _status.value = currentStatus()
             }
             override fun onLost(network: Network) {
                 _status.value = currentStatus()
             }
             override fun onUnavailable() { _status.value = NetworkStatus.OFFLINE }
             override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
-                _status.value = resolveTransport(caps)
+                _status.value = currentStatus()
             }
         })
     }
