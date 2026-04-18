@@ -132,7 +132,7 @@ fun ViewerScreen(
                             CircularProgressIndicator(color = Color.White)
                         }
                     }
-                    state.stream == null -> {
+                    state.isEnded || state.stream == null -> {
                         EndedState()
                     }
                     else -> {

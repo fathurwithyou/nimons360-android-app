@@ -37,7 +37,11 @@ class ViewerViewModel(
                 if (current != null) {
                     _state.value = _state.value.copy(stream = current, isLoading = false, isEnded = false)
                 } else if (_state.value.stream != null) {
-                    _state.value = _state.value.copy(isEnded = true)
+                    _state.value = _state.value.copy(
+                        stream = null,
+                        isLoading = false,
+                        isEnded = true,
+                    )
                 }
             }
             .launchIn(viewModelScope)
