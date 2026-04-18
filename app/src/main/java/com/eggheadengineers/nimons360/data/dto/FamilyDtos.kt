@@ -62,3 +62,9 @@ data class FamilyListApiResponse(
 data class FamilyDetailApiResponse(
     @SerialName("data") val data: FamilyDetailDto?,
 )
+
+@Serializable
+data class SimpleApiResponse(
+    @SerialName("status") val status: String? = null,
+    @SerialName("message") val message: String? = null,
+)

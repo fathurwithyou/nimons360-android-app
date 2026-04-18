@@ -31,8 +31,8 @@ interface ApiService {
     suspend fun createFamily(@Body request: CreateFamilyRequestDto): Response<FamilyDetailApiResponse>
 
     @POST("api/families/join")
-    suspend fun joinFamily(@Body request: JoinFamilyRequestDto): Response<FamilyDetailApiResponse>
+    suspend fun joinFamily(@Body request: JoinFamilyRequestDto): Response<SimpleApiResponse>
 
     @POST("api/families/leave")
-    suspend fun leaveFamily(@Body request: LeaveFamilyRequestDto): Response<FamilyDetailApiResponse>
+    suspend fun leaveFamily(@Body request: LeaveFamilyRequestDto): Response<SimpleApiResponse>
 }

@@ -8,12 +8,14 @@ import android.net.NetworkRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.util.concurrent.ConcurrentHashMap
 
 enum class NetworkStatus { WIFI, MOBILE, OFFLINE }
 
 class ConnectivityObserver(context: Context) {
 
     private val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    private val activeNetworks = ConcurrentHashMap<Network, NetworkCapabilities>()
 
     private val _status = MutableStateFlow(currentStatus())
     val status: StateFlow<NetworkStatus> = _status.asStateFlow()
@@ -24,17 +26,31 @@ class ConnectivityObserver(context: Context) {
             .build()
         cm.registerNetworkCallback(request, object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
-                val caps = cm.getNetworkCapabilities(network)
-                _status.value = if (caps != null) resolveTransport(caps) else currentStatus()
+                val caps = cm.getNetworkCapabilities(network) ?: return
+                activeNetworks[network] = caps
+                _status.value = computeStatus()
             }
             override fun onLost(network: Network) {
-                _status.value = currentStatus()
+                activeNetworks.remove(network)
+                _status.value = computeStatus()
             }
-            override fun onUnavailable() { _status.value = NetworkStatus.OFFLINE }
+            override fun onUnavailable() {
+                _status.value = NetworkStatus.OFFLINE
+            }
             override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
-                _status.value = resolveTransport(caps)
+                activeNetworks[network] = caps
+                _status.value = computeStatus()
             }
         })
+    }
+
+    private fun computeStatus(): NetworkStatus {
+        val caps = activeNetworks.values
+        return when {
+            caps.any { it.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } -> NetworkStatus.WIFI
+            caps.any { it.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) } -> NetworkStatus.MOBILE
+            else -> NetworkStatus.OFFLINE
+        }
     }
 
     private fun currentStatus(): NetworkStatus {

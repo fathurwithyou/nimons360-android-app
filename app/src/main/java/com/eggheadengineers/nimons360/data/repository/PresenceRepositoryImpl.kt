@@ -35,7 +35,7 @@ class PresenceRepositoryImpl(
 
     companion object {
         private const val TAG = "PresenceWS"
-        private const val WS_URL = "ws://10.0.2.2:3000/ws/live"
+        private const val WS_URL = "wss://mad.labpro.hmif.dev/ws/live"
         private const val RECONNECT_DELAY_MS = 3000L
     }
 

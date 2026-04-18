@@ -37,7 +37,7 @@ data class MapUiState(
 ) {
     val selectedMember: MemberPresence? 
         get() = selectedMemberId?.let { members[it] }
-    val filteredMembers: Map<String, MemberPresence> 
+    val filteredMembers: Map<String, MemberPresence>
         get() {
             if (selectedFamilyIds.isEmpty()) return members
             val allowedUserIds = families
@@ -45,6 +45,7 @@ data class MapUiState(
                 .flatMap { it.members }
                 .map { it.id }
                 .toSet()
+            if (allowedUserIds.isEmpty()) return members
             return members.filter { (userId, _) -> userId in allowedUserIds }
         }
 }
@@ -58,12 +59,46 @@ class MapViewModel(
     private val batteryProvider: BatteryProvider,
     private val connectivityObserver: ConnectivityObserver,
 ) : ViewModel() {
+    companion object {
+        private const val PRESENCE_FAMILY_REFRESH_COOLDOWN_MS = 8_000L
+    }
+
     private val _uiState = MutableStateFlow(MapUiState())
     val uiState: StateFlow<MapUiState> = _uiState
 
     private var presenceJob: Job? = null
     private var staleCleanupJob: Job? = null
+    private var loadFamiliesJob: Job? = null
     private var trackingStarted = false
+    private var lastPresenceDrivenFamiliesRefreshMs = 0L
+
+    private fun refreshFamiliesForNewMembers(
+        previousMembers: Map<String, MemberPresence>,
+        latestMembers: Map<String, MemberPresence>,
+        families: List<Family>,
+    ): Boolean {
+        if (latestMembers.isEmpty()) return false
+        val newMemberIds = latestMembers.keys - previousMembers.keys
+        if (newMemberIds.isEmpty()) return false
+
+        val knownFamilyMemberIds = families
+            .flatMap { it.members }
+            .map { it.id }
+            .toSet()
+
+        return newMemberIds.any { it !in knownFamilyMemberIds }
+    }
+
+    private fun refreshFamiliesForSelectedFilter(
+        selectedFamilyIds: Set<String>,
+        latestMembers: Map<String, MemberPresence>,
+    ): Boolean {
+        if (selectedFamilyIds.isEmpty()) return false
+        if (latestMembers.isEmpty()) return false
+
+        val now = System.currentTimeMillis()
+        return now - lastPresenceDrivenFamiliesRefreshMs >= PRESENCE_FAMILY_REFRESH_COOLDOWN_MS
+    }
 
     init {
         loadFamilies()
@@ -78,7 +113,8 @@ class MapViewModel(
     }
 
     private fun loadFamilies() {
-        viewModelScope.launch {
+        if (loadFamiliesJob?.isActive == true) return
+        loadFamiliesJob = viewModelScope.launch {
             familyRepository.getMyFamilies().onSuccess { families ->
                 _uiState.update { it.copy(families = families) }
             }
@@ -98,6 +134,7 @@ class MapViewModel(
             }
             state.copy(selectedFamilyIds = newIds)
         }
+        loadFamilies()
     }
 
     fun onPermissionGranted() {
@@ -113,14 +150,31 @@ class MapViewModel(
 
         viewModelScope.launch {
             presenceRepository.observeMembers().collect { members ->
+                val previousState = _uiState.value
+                val refreshForNewMembers = refreshFamiliesForNewMembers(
+                    previousMembers = previousState.members,
+                    latestMembers = members,
+                    families = previousState.families,
+                )
+                val refreshForSelectedFilter = refreshFamiliesForSelectedFilter(
+                    selectedFamilyIds = previousState.selectedFamilyIds,
+                    latestMembers = members,
+                )
+                val refreshFamilies = refreshForNewMembers || refreshForSelectedFilter
+
                 _uiState.update { it.copy(members = members) }
+
+                if (refreshFamilies) {
+                    lastPresenceDrivenFamiliesRefreshMs = System.currentTimeMillis()
+                    loadFamilies()
+                }
             }
         }
 
         staleCleanupJob = viewModelScope.launch {
             while (true) {
-                delay(10_000)
-                presenceRepository.removeStaleMembers(90_000)
+                delay(2_000)
+                presenceRepository.removeStaleMembers(5_000)
             }
         }
 
@@ -142,18 +196,25 @@ class MapViewModel(
             }
         }
 
-        presenceJob = viewModelScope.launch {
-            locationTracker.locationUpdates(3000).collect { location ->
+        viewModelScope.launch {
+            locationTracker.locationUpdates(1000).collect { location ->
                 _uiState.update { it.copy(myLat = location.latitude, myLng = location.longitude) }
+            }
+        }
+
+        presenceJob = viewModelScope.launch {
+            while (true) {
+                delay(1_000)
                 val s = _uiState.value
+                if (s.myLat == 0.0 && s.myLng == 0.0) continue
                 val internetStatus = when (s.networkStatus) {
                     NetworkStatus.WIFI -> "wifi"
                     NetworkStatus.MOBILE -> "mobile"
                     NetworkStatus.OFFLINE -> "offline"
                 }
                 presenceRepository.sendPresence(
-                    lat = location.latitude,
-                    lng = location.longitude,
+                    lat = s.myLat,
+                    lng = s.myLng,
                     rotation = s.myRotation,
                     battery = s.battery.level,
                     charging = s.battery.charging,
