@@ -79,8 +79,10 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.osmdroid)
     implementation(libs.coil.compose)
-    implementation("androidx.media3:media3-exoplayer:1.4.1")
-    implementation("androidx.media3:media3-ui:1.4.1")
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.exoplayer.hls)
+    implementation(libs.media3.ui)
+    implementation(libs.rootencoder.library)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

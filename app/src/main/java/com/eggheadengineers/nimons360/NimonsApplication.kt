@@ -15,11 +15,17 @@ class NimonsApplication : Application() {
     val sessionManager by lazy { 
         SessionManager(this) 
     }
-    val apiService by lazy { 
-        NetworkModule.provideApiService(sessionManager) 
+    val apiService by lazy {
+        NetworkModule.provideApiService(sessionManager)
     }
-    val wsClient by lazy { 
-        NetworkModule.provideWsClient(sessionManager) 
+    val wsClient by lazy {
+        NetworkModule.provideWsClient(sessionManager)
+    }
+    val liveStreamApi by lazy {
+        NetworkModule.provideLiveStreamApi()
+    }
+    val liveWsClient by lazy {
+        NetworkModule.provideLiveWsClient()
     }
     val database by lazy { 
         AppDatabase.getInstance(this) 
@@ -38,6 +44,9 @@ class NimonsApplication : Application() {
     }
     val favoriteLocationRepository: FavoriteLocationRepository by lazy {
         FavoriteLocationRepositoryImpl(database.favoriteLocationDao())
+    }
+    val liveStreamRepository: LiveStreamRepository by lazy {
+        LiveStreamRepositoryImpl(liveStreamApi, liveWsClient, sessionManager)
     }
     val connectivityObserver by lazy { 
         ConnectivityObserver(this) 
