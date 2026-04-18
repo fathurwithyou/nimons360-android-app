@@ -22,7 +22,8 @@ class OrientationProvider(private val context: Context) {
                 SensorManager.getRotationMatrixFromVector(rotMatrix, event.values)
                 SensorManager.getOrientation(rotMatrix, orientation)
                 val azimuthDeg = Math.toDegrees(orientation[0].toDouble()).toFloat()
-                trySend(azimuthDeg)
+                val normalized = (azimuthDeg + 360f) % 360f
+                trySend(normalized)
             }
             override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
         }
