@@ -3,11 +3,6 @@ package com.eggheadengineers.nimons360.feature.map
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import com.eggheadengineers.nimons360.core.battery.BatteryProvider
 import com.eggheadengineers.nimons360.core.battery.BatteryState
 import com.eggheadengineers.nimons360.core.location.LocationTracker
@@ -20,6 +15,10 @@ import com.eggheadengineers.nimons360.domain.model.MemberPresence
 import com.eggheadengineers.nimons360.domain.repository.FamilyRepository
 import com.eggheadengineers.nimons360.domain.repository.FavoriteLocationRepository
 import com.eggheadengineers.nimons360.domain.repository.PresenceRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 
 data class MapUiState(
     val myLat: Double = 0.0,

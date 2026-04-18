@@ -35,7 +35,7 @@ class HomeViewModel(private val familyRepository: FamilyRepository) : ViewModel(
         load()
     }
 
-    private fun load() {
+    fun load() {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             _uiState.value = uiState.value.copy(isLoading = true, error = null)

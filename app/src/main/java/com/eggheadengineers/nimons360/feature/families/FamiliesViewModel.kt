@@ -3,15 +3,14 @@ package com.eggheadengineers.nimons360.feature.families
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.TimeoutCancellationException
 import com.eggheadengineers.nimons360.data.network.userFriendlyMessage
 import com.eggheadengineers.nimons360.domain.model.Family
 import com.eggheadengineers.nimons360.domain.repository.FamilyRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 enum class FamiliesFilter { ALL, MY_FAMILIES }
 
@@ -47,10 +46,8 @@ class FamiliesViewModel(private val familyRepository: FamilyRepository) : ViewMo
 
     init {
         viewModelScope.launch {
-            familyRepository.getPinnedFamilyIds().collect {
-                ids -> _uiState.update {
-                    it.copy(pinnedIds = ids)
-                }
+            familyRepository.getPinnedFamilyIds().collect { ids ->
+                _uiState.update { it.copy(pinnedIds = ids) }
             }
         }
         viewModelScope.launch {
@@ -68,7 +65,7 @@ class FamiliesViewModel(private val familyRepository: FamilyRepository) : ViewMo
             try {
                 withTimeout(LOAD_TIMEOUT_MS) {
                     val result = when (uiState.value.filter) {
-                        FamiliesFilter.ALL -> familyRepository.getDiscoverFamilies()
+                        FamiliesFilter.ALL -> familyRepository.getAllFamilies()
                         FamiliesFilter.MY_FAMILIES -> familyRepository.getMyFamilies()
                     }
                     _uiState.update {
@@ -79,14 +76,20 @@ class FamiliesViewModel(private val familyRepository: FamilyRepository) : ViewMo
                         )
                     }
                 }
-            } catch (e: TimeoutCancellationException) {
+            } catch (_: TimeoutCancellationException) {
                 _uiState.update {
                     it.copy(
-                    isLoading = false, 
-                    error = "The server is taking too long to respond. Please try again later."
-                )
+                        error = "The server is taking too long to respond. Please try again later.",
+                        isLoading = false
+                    )
+
+                }
             }
         }
+    }
+
+    private companion object {
+        const val LOAD_TIMEOUT_MS = 15_000L
     }
 
     fun setFilter(filter: FamiliesFilter) {
@@ -94,9 +97,7 @@ class FamiliesViewModel(private val familyRepository: FamilyRepository) : ViewMo
         load()
     }
 
-    fun setSearch(query: String) {
-        _uiState.update { it.copy(searchQuery = query) }
-    }
+    fun setSearch(query: String) { _uiState.update { it.copy(searchQuery = query) } }
 
     fun togglePin(family: Family) {
         viewModelScope.launch {
@@ -104,14 +105,10 @@ class FamiliesViewModel(private val familyRepository: FamilyRepository) : ViewMo
             else familyRepository.pinFamily(family)
         }
     }
-    
+
     class Factory(private val repo: FamilyRepository) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>) = FamiliesViewModel(repo) as T
-    }
-
-    private companion object {
-        const val LOAD_TIMEOUT_MS = 15_000L
     }
 }
 

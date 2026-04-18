@@ -19,25 +19,25 @@ class NimonsApplication : Application() {
         NetworkModule.provideApiService(sessionManager) 
     }
     val wsClient by lazy { 
-        NetworkModule.provideWebSocketClient(sessionManager) 
+        NetworkModule.provideWsClient(sessionManager) 
     }
     val database by lazy { 
         AppDatabase.getInstance(this) 
     }
     val authRepository: AuthRepository by lazy { 
-        provideAuthRepositoryImpl(apiService, sessionManager) 
+        AuthRepositoryImpl(apiService, sessionManager) 
     }
     val familyRepository: FamilyRepository by lazy { 
-        provideFamilyRepositoryImpl(apiService) 
+        FamilyRepositoryImpl(apiService, database) 
     }
     val profileRepository: ProfileRepository by lazy { 
-        provideProfileRepositoryImpl(apiService) 
+        ProfileRepositoryImpl(apiService) 
     }
     val presenceRepository: PresenceRepository by lazy { 
-        providePresenceRepositoryImpl(wsClient) 
+        PresenceRepositoryImpl(wsClient, sessionManager) 
     }
     val favoriteLocationRepository: FavoriteLocationRepository by lazy {
-        provideFavoriteLocationRepositoryImpl(apiService)
+        FavoriteLocationRepositoryImpl(database.favoriteLocationDao())
     }
     val connectivityObserver by lazy { 
         ConnectivityObserver(this) 

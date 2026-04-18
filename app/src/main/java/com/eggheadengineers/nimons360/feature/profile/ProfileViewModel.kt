@@ -15,7 +15,7 @@ data class ProfileUiState(
     val profile: Profile? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
-    val isSigningOut: Boolean = false,
+    val isSignedOut: Boolean = false,
     val updateMessage: String? = null,
 )
 
@@ -58,7 +58,8 @@ class ProfileViewModel(
                 onFailure = {
                     _uiState.value = uiState.value.copy(
                         isLoading = false,
-                        updateMessage = it.userFriendlyMessage("Failed to update profile"))
+                        error = it.userFriendlyMessage("Failed to update profile")
+                    )
                 }
             )
         }
@@ -67,7 +68,7 @@ class ProfileViewModel(
     fun signOut() {
         viewModelScope.launch {
             authRepository.logout()
-            _uiState.value = uiState.value.copy(isSigningOut = true)
+            _uiState.value = uiState.value.copy(isSignedOut = true)
         }
     }
 
