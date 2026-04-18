@@ -37,7 +37,7 @@ data class MapUiState(
 ) {
     val selectedMember: MemberPresence? 
         get() = selectedMemberId?.let { members[it] }
-    val filteredMembers: Map<String, MemberPresence> 
+    val filteredMembers: Map<String, MemberPresence>
         get() {
             if (selectedFamilyIds.isEmpty()) return members
             val allowedUserIds = families
@@ -45,6 +45,7 @@ data class MapUiState(
                 .flatMap { it.members }
                 .map { it.id }
                 .toSet()
+            if (allowedUserIds.isEmpty()) return members
             return members.filter { (userId, _) -> userId in allowedUserIds }
         }
 }
@@ -119,8 +120,8 @@ class MapViewModel(
 
         staleCleanupJob = viewModelScope.launch {
             while (true) {
-                delay(10_000)
-                presenceRepository.removeStaleMembers(90_000)
+                delay(2_000)
+                presenceRepository.removeStaleMembers(5_000)
             }
         }
 
@@ -142,18 +143,25 @@ class MapViewModel(
             }
         }
 
-        presenceJob = viewModelScope.launch {
-            locationTracker.locationUpdates(3000).collect { location ->
+        viewModelScope.launch {
+            locationTracker.locationUpdates(1000).collect { location ->
                 _uiState.update { it.copy(myLat = location.latitude, myLng = location.longitude) }
+            }
+        }
+
+        presenceJob = viewModelScope.launch {
+            while (true) {
+                delay(1_000)
                 val s = _uiState.value
+                if (s.myLat == 0.0 && s.myLng == 0.0) continue
                 val internetStatus = when (s.networkStatus) {
                     NetworkStatus.WIFI -> "wifi"
                     NetworkStatus.MOBILE -> "mobile"
                     NetworkStatus.OFFLINE -> "offline"
                 }
                 presenceRepository.sendPresence(
-                    lat = location.latitude,
-                    lng = location.longitude,
+                    lat = s.myLat,
+                    lng = s.myLng,
                     rotation = s.myRotation,
                     battery = s.battery.level,
                     charging = s.battery.charging,
