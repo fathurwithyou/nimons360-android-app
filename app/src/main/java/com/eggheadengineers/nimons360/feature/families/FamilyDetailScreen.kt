@@ -54,6 +54,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.eggheadengineers.nimons360.domain.model.FamilyDetail
 import com.eggheadengineers.nimons360.domain.model.FamilyMember
+import com.eggheadengineers.nimons360.domain.model.LiveStream
+import com.eggheadengineers.nimons360.feature.livestream.LiveStreamsSection
 import com.eggheadengineers.nimons360.ui.components.AppCompactSecondaryButton
 import com.eggheadengineers.nimons360.ui.components.AppDestructiveButton
 import com.eggheadengineers.nimons360.ui.components.AppDarkButton
@@ -83,6 +85,8 @@ private const val INITIAL_MEMBER_LIMIT = 5
 fun FamilyDetailScreen(
     viewModel: FamilyDetailViewModel,
     onBack: () -> Unit,
+    onGoLive: () -> Unit = {},
+    onWatchStream: (String) -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -149,9 +153,12 @@ fun FamilyDetailScreen(
             state.detail != null -> {
                 FamilyDetailContent(
                     detail = state.detail!!,
+                    liveStreams = state.liveStreams,
                     modifier = Modifier.padding(top = innerPadding.calculateTopPadding()),
                     onJoinClick = { showJoinDialog = true },
                     onLeaveClick = { showLeaveDialog = true },
+                    onGoLive = onGoLive,
+                    onWatchStream = onWatchStream,
                     onCopyCode = { code ->
                         val manager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         manager.setPrimaryClip(ClipData.newPlainText("Family Code", code))
@@ -248,9 +255,12 @@ private fun FamilyActionDialog(
 @Composable
 private fun FamilyDetailContent(
     detail: FamilyDetail,
+    liveStreams: List<LiveStream>,
     modifier: Modifier = Modifier,
     onJoinClick: () -> Unit,
     onLeaveClick: () -> Unit,
+    onGoLive: () -> Unit,
+    onWatchStream: (String) -> Unit,
     onCopyCode: (String) -> Unit,
 ) {
     var showAllMembers by remember { mutableStateOf(false) }
@@ -385,6 +395,15 @@ private fun FamilyDetailContent(
             }
         }
 
+        if (liveStreams.isNotEmpty()) {
+            item {
+                LiveStreamsSection(
+                    streams = liveStreams,
+                    onStreamClick = { onWatchStream(it.id) },
+                )
+            }
+        }
+
         item {
             Column(verticalArrangement = Arrangement.spacedBy(AppGrid.Space3)) {
                 Row(
@@ -474,18 +493,25 @@ private fun FamilyDetailContent(
         }
 
         item {
-            if (detail.isMember) {
-                AppDestructiveButton(
-                    text = "Leave family",
-                    onClick = onLeaveClick,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            } else {
-                AppDarkButton(
-                    text = "Join family",
-                    onClick = onJoinClick,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(AppGrid.Space3)) {
+                if (detail.isMember) {
+                    AppDarkButton(
+                        text = "Go live",
+                        onClick = onGoLive,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    AppDestructiveButton(
+                        text = "Leave family",
+                        onClick = onLeaveClick,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                } else {
+                    AppDarkButton(
+                        text = "Join family",
+                        onClick = onJoinClick,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         }
     }

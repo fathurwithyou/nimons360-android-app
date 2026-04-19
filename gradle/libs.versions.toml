@@ -16,6 +16,8 @@ okhttp = "4.12.0"
 coroutines = "1.10.2"
 osmdroid = "6.1.20"
 coil = "2.7.0"
+media3 = "1.4.1"
+rootencoder = "2.7.2"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
@@ -73,6 +75,14 @@ osmdroid = { group = "org.osmdroid", name = "osmdroid-android", version.ref = "o
 
 # Image loading
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+
+# Media3 (ExoPlayer) for HLS viewer
+media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "media3" }
+media3-exoplayer-hls = { group = "androidx.media3", name = "media3-exoplayer-hls", version.ref = "media3" }
+media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "media3" }
+
+# RootEncoder (RTMP broadcaster)
+rootencoder-library = { group = "com.github.pedroSG94.RootEncoder", name = "library", version.ref = "rootencoder" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }

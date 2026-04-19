@@ -41,3 +41,15 @@ fun MemberPresenceUpdatedPayloadDto.toDomain() = MemberPresence(
 fun Family.toEntity() = PinnedFamilyEntity(id = id, name = name, iconUrl = iconUrl)
 
 fun PinnedFamilyEntity.toDomain() = Family(id = id, name = name, iconUrl = iconUrl, isPinned = true)
+
+fun LiveStreamDto.toDomain() = LiveStream(
+    id = id,
+    familyId = familyId,
+    broadcasterId = broadcasterId,
+    broadcasterName = broadcasterName,
+    title = title,
+    startedAt = startedAt,
+    rtmpUrl = rtmpUrl,
+    streamKey = streamKey,
+    hlsUrl = hlsUrl,
+)

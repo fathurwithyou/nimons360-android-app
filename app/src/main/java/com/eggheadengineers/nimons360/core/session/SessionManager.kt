@@ -16,6 +16,7 @@ class SessionManager(private val context: Context) {
     companion object {
         private val KEY_TOKEN = stringPreferencesKey("auth_token")
         private val KEY_USER_NAME = stringPreferencesKey("user_name")
+        private val KEY_USER_ID = stringPreferencesKey("user_id")
     }
 
     suspend fun saveToken(token: String) {
@@ -37,4 +38,11 @@ class SessionManager(private val context: Context) {
 
     suspend fun getUserName(): String? =
         context.dataStore.data.map { it[KEY_USER_NAME] }.first()
+
+    suspend fun saveUserId(id: String) {
+        context.dataStore.edit { it[KEY_USER_ID] = id }
+    }
+
+    suspend fun getUserId(): String? =
+        context.dataStore.data.map { it[KEY_USER_ID] }.first()
 }

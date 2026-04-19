@@ -14,6 +14,10 @@ import com.eggheadengineers.nimons360.feature.auth.LoginViewModel
 import com.eggheadengineers.nimons360.feature.families.*
 import com.eggheadengineers.nimons360.feature.home.HomeScreen
 import com.eggheadengineers.nimons360.feature.home.HomeViewModel
+import com.eggheadengineers.nimons360.feature.livestream.BroadcasterScreen
+import com.eggheadengineers.nimons360.feature.livestream.BroadcasterViewModel
+import com.eggheadengineers.nimons360.feature.livestream.ViewerScreen
+import com.eggheadengineers.nimons360.feature.livestream.ViewerViewModel
 import com.eggheadengineers.nimons360.feature.map.MapScreen
 import com.eggheadengineers.nimons360.feature.map.MapViewModel
 import com.eggheadengineers.nimons360.feature.profile.ProfileScreen
@@ -28,6 +32,12 @@ sealed class Screen(val route: String) {
     data object Profile : Screen("profile")
     data object FamilyDetail : Screen("family_detail/{familyId}") {
         fun createRoute(familyId: String) = "family_detail/$familyId"
+    }
+    data object LiveBroadcaster : Screen("live_broadcaster/{familyId}") {
+        fun createRoute(familyId: String) = "live_broadcaster/$familyId"
+    }
+    data object LiveViewer : Screen("live_viewer/{familyId}/{streamId}") {
+        fun createRoute(familyId: String, streamId: String) = "live_viewer/$familyId/$streamId"
     }
 }
 
@@ -123,12 +133,52 @@ fun NimonsNavGraph(
         ) { backStackEntry ->
             val familyId = backStackEntry.arguments?.getString("familyId") ?: return@composable
             val vm: FamilyDetailViewModel = viewModel(
-                factory = FamilyDetailViewModel.Factory(familyId, app.familyRepository)
+                factory = FamilyDetailViewModel.Factory(
+                    familyId,
+                    app.familyRepository,
+                    app.liveStreamRepository,
+                ),
             )
             FamilyDetailScreen(
                 viewModel = vm,
                 onBack = { navController.popBackStack() },
+                onGoLive = { navController.navigate(Screen.LiveBroadcaster.createRoute(familyId)) },
+                onWatchStream = { streamId ->
+                    navController.navigate(Screen.LiveViewer.createRoute(familyId, streamId))
+                },
             )
         }
-    }    
+
+        composable(
+            route = Screen.LiveBroadcaster.route,
+            arguments = listOf(navArgument("familyId") { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val familyId = backStackEntry.arguments?.getString("familyId") ?: return@composable
+            val vm: BroadcasterViewModel = viewModel(
+                factory = BroadcasterViewModel.Factory(familyId, app.liveStreamRepository),
+            )
+            BroadcasterScreen(
+                viewModel = vm,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(
+            route = Screen.LiveViewer.route,
+            arguments = listOf(
+                navArgument("familyId") { type = NavType.StringType },
+                navArgument("streamId") { type = NavType.StringType },
+            ),
+        ) { backStackEntry ->
+            val familyId = backStackEntry.arguments?.getString("familyId") ?: return@composable
+            val streamId = backStackEntry.arguments?.getString("streamId") ?: return@composable
+            val vm: ViewerViewModel = viewModel(
+                factory = ViewerViewModel.Factory(streamId, familyId, app.liveStreamRepository),
+            )
+            ViewerScreen(
+                viewModel = vm,
+                onBack = { navController.popBackStack() },
+            )
+        }
+    }
 }

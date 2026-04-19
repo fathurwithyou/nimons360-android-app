@@ -18,6 +18,7 @@ class AuthRepositoryImpl(
         val token = loginData.token ?: error("Token not in response")
         sessionManager.saveToken(token)
         loginData.user?.fullName?.let { sessionManager.saveUserName(it) }
+        loginData.user?.id?.let { sessionManager.saveUserId(it.toString()) }
         token
     }
 

@@ -5,16 +5,21 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import com.eggheadengineers.nimons360.data.network.userFriendlyMessage
 import com.eggheadengineers.nimons360.domain.model.FamilyDetail
+import com.eggheadengineers.nimons360.domain.model.LiveStream
 import com.eggheadengineers.nimons360.domain.repository.FamilyRepository
+import com.eggheadengineers.nimons360.domain.repository.LiveStreamRepository
 
 data class FamilyDetailUiState(
     val detail: FamilyDetail? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
     val feedback: FamilyDetailFeedback? = null,
+    val liveStreams: List<LiveStream> = emptyList(),
 )
 
 data class FamilyDetailFeedback(
@@ -25,13 +30,24 @@ data class FamilyDetailFeedback(
 
 class FamilyDetailViewModel(
     private val familyId: String,
-    private val familyRepository: FamilyRepository
+    private val familyRepository: FamilyRepository,
+    private val liveStreamRepository: LiveStreamRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(FamilyDetailUiState())
     val uiState: StateFlow<FamilyDetailUiState> = _uiState
 
     init {
         load()
+        liveStreamRepository.connect()
+        liveStreamRepository.observeFamilyStreams(familyId)
+            .onEach { streams -> _uiState.value = _uiState.value.copy(liveStreams = streams) }
+            .launchIn(viewModelScope)
+        viewModelScope.launch { liveStreamRepository.listStreams(familyId) }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        liveStreamRepository.disconnect()
     }
 
     fun load(feedback: FamilyDetailFeedback? = null) {
@@ -112,9 +128,11 @@ class FamilyDetailViewModel(
 
     class Factory(
         private val familyId: String,
-        private val repo: FamilyRepository
+        private val repo: FamilyRepository,
+        private val liveStreamRepository: LiveStreamRepository,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>) = FamilyDetailViewModel(familyId, repo) as T
+        override fun <T : ViewModel> create(modelClass: Class<T>) =
+            FamilyDetailViewModel(familyId, repo, liveStreamRepository) as T
     }
 }
