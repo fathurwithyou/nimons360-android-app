@@ -4,9 +4,19 @@ import com.eggheadengineers.nimons360.data.dto.*
 import com.eggheadengineers.nimons360.data.local.PinnedFamilyEntity
 import com.eggheadengineers.nimons360.domain.model.*
 
-fun ProfileDto.toDomain() = Profile(id = id.toString(), name = fullName, email = email)
+fun ProfileDto.toDomain() = Profile(
+    id = id.toString(),
+    name = fullName,
+    email = email,
+    profileImageUrl = profileImageUrl,
+)
 
-fun FamilyMemberDto.toDomain() = FamilyMember(id = id?.toString() ?: "", name = fullName, email = email)
+fun FamilyMemberDto.toDomain() = FamilyMember(
+    id = id?.toString() ?: "",
+    name = fullName,
+    email = email,
+    profileImageUrl = profileImageUrl,
+)
 
 fun FamilySummaryDto.toDomain(isPinned: Boolean = false) = Family(
     id = id.toString(),
@@ -36,6 +46,7 @@ fun MemberPresenceUpdatedPayloadDto.toDomain() = MemberPresence(
     battery = batteryLevel ?: 0,
     charging = isCharging ?: false,
     internetStatus = internetStatus ?: "unknown",
+    profileImageUrl = profileImageUrl,
 )
 
 fun Family.toEntity() = PinnedFamilyEntity(id = id, name = name, iconUrl = iconUrl)

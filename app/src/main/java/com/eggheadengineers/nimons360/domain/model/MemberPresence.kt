@@ -10,5 +10,6 @@ data class MemberPresence(
     val battery: Int,
     val charging: Boolean,
     val internetStatus: String,
+    val profileImageUrl: String? = null,
     val lastSeen: Long = System.currentTimeMillis(),
 )
