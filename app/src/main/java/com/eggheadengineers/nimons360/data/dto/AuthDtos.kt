@@ -15,6 +15,7 @@ data class LoginUserDto(
     @SerialName("nim") val nim: String?,
     @SerialName("email") val email: String,
     @SerialName("fullName") val fullName: String,
+    @SerialName("profileImageUrl") val profileImageUrl: String? = null,
 )
 
 @Serializable
@@ -32,6 +33,7 @@ data class ProfileDto(
     @SerialName("fullName") val fullName: String,
     @SerialName("createdAt") val createdAt: String?,
     @SerialName("updatedAt") val updatedAt: String?,
+    @SerialName("profileImageUrl") val profileImageUrl: String? = null,
 )
 
 @Serializable

@@ -17,7 +17,7 @@ object NetworkModule {
 
     fun provideApiService(sessionManager: SessionManager): ApiService {
         val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = HttpLoggingInterceptor.Level.BASIC
         }
         val client = OkHttpClient.Builder()
             .addInterceptor(AuthInterceptor(sessionManager))

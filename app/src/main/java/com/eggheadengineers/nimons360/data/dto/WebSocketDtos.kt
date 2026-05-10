@@ -41,4 +41,5 @@ data class MemberPresenceUpdatedPayloadDto(
     @SerialName("isCharging") val isCharging: Boolean? = null,
     @SerialName("internetStatus") val internetStatus: String? = null,
     @SerialName("metadata") val metadata: JsonObject? = null,
+    @SerialName("profileImageUrl") val profileImageUrl: String? = null,
 )

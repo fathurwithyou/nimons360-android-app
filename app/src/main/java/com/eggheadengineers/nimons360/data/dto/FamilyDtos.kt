@@ -9,6 +9,7 @@ data class FamilyMemberDto(
     @SerialName("fullName") val fullName: String,
     @SerialName("email") val email: String,
     @SerialName("joinedAt") val joinedAt: String? = null,
+    @SerialName("profileImageUrl") val profileImageUrl: String? = null,
 )
 
 @Serializable
@@ -67,4 +68,62 @@ data class FamilyDetailApiResponse(
 data class SimpleApiResponse(
     @SerialName("status") val status: String? = null,
     @SerialName("message") val message: String? = null,
+)
+
+@Serializable
+data class SubscribeDeviceTokenRequestDto(
+    @SerialName("fcmToken") val fcmToken: String,
+)
+
+@Serializable
+data class SubscribeDeviceTokenDataDto(
+    @SerialName("subscribed") val subscribed: Boolean,
+)
+
+@Serializable
+data class SubscribeDeviceTokenApiResponse(
+    @SerialName("data") val data: SubscribeDeviceTokenDataDto?,
+)
+
+@Serializable
+data class UnsubscribeDeviceTokenDataDto(
+    @SerialName("unsubscribed") val unsubscribed: Boolean,
+)
+
+@Serializable
+data class UnsubscribeDeviceTokenApiResponse(
+    @SerialName("data") val data: UnsubscribeDeviceTokenDataDto?,
+)
+
+@Serializable
+data class SendFamilyNotificationRequestDto(
+    @SerialName("familyId") val familyId: Int,
+    @SerialName("message") val message: String,
+)
+
+@Serializable
+data class SendFamilyNotificationDataDto(
+    @SerialName("sent") val sent: Boolean,
+)
+
+@Serializable
+data class SendFamilyNotificationApiResponse(
+    @SerialName("data") val data: SendFamilyNotificationDataDto?,
+)
+
+@Serializable
+data class SendGreetingNotificationRequestDto(
+    @SerialName("familyId") val familyId: Int,
+    @SerialName("targetUserId") val targetUserId: Int,
+    @SerialName("message") val message: String,
+)
+
+@Serializable
+data class SendGreetingNotificationDataDto(
+    @SerialName("delivered") val delivered: Boolean,
+)
+
+@Serializable
+data class SendGreetingNotificationApiResponse(
+    @SerialName("data") val data: SendGreetingNotificationDataDto?,
 )

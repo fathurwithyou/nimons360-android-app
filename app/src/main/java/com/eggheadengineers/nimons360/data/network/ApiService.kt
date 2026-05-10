@@ -1,6 +1,7 @@
 package com.eggheadengineers.nimons360.data.network
 
 import com.eggheadengineers.nimons360.data.dto.*
+import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -14,6 +15,10 @@ interface ApiService {
 
     @PATCH("api/me")
     suspend fun updateProfile(@Body request: UpdateProfileRequestDto): Response<ProfileApiResponse>
+
+    @Multipart
+    @POST("api/me/photo")
+    suspend fun uploadProfilePhoto(@Part photo: MultipartBody.Part): Response<ProfileApiResponse>
 
     @GET("api/me/families")
     suspend fun getMyFamilies(): Response<FamilyListApiResponse>
@@ -35,4 +40,22 @@ interface ApiService {
 
     @POST("api/families/leave")
     suspend fun leaveFamily(@Body request: LeaveFamilyRequestDto): Response<SimpleApiResponse>
+
+    @POST("api/notifications/subscribe")
+    suspend fun subscribeDeviceToken(
+        @Body request: SubscribeDeviceTokenRequestDto,
+    ): Response<SubscribeDeviceTokenApiResponse>
+
+    @POST("api/notifications/unsubscribe")
+    suspend fun unsubscribeDeviceToken(): Response<UnsubscribeDeviceTokenApiResponse>
+
+    @POST("api/notifications/send")
+    suspend fun sendFamilyNotification(
+        @Body request: SendFamilyNotificationRequestDto,
+    ): Response<SendFamilyNotificationApiResponse>
+
+    @POST("api/notifications/greeting")
+    suspend fun sendGreetingNotification(
+        @Body request: SendGreetingNotificationRequestDto,
+    ): Response<SendGreetingNotificationApiResponse>
 }
