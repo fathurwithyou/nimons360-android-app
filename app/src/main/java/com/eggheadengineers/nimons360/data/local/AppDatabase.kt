@@ -6,8 +6,12 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [PinnedFamilyEntity::class, FavoriteLocationEntity::class],
-    version = 2,
+    entities = [
+        PinnedFamilyEntity::class,
+        FavoriteLocationEntity::class,
+        FavoriteLocationPhotoEntity::class,
+    ],
+    version = 3,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
