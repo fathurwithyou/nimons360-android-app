@@ -1,6 +1,7 @@
 package com.eggheadengineers.nimons360.feature.map
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.graphics.Bitmap
@@ -8,6 +9,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.drawable.BitmapDrawable
+import android.net.Uri
 import android.view.MotionEvent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -54,7 +56,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -65,8 +69,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import coil.compose.AsyncImage
 import com.eggheadengineers.nimons360.NimonsApplication
+import com.eggheadengineers.nimons360.core.media.ImagePayload
+import com.eggheadengineers.nimons360.core.media.createCacheImageUri
+import com.eggheadengineers.nimons360.core.media.readImagePayload
 import com.eggheadengineers.nimons360.domain.model.FavoriteLocation
+import com.eggheadengineers.nimons360.domain.model.FavoriteLocationPhotoInput
 import com.eggheadengineers.nimons360.domain.model.MemberPresence
 import com.eggheadengineers.nimons360.ui.components.AppCard
 import com.eggheadengineers.nimons360.ui.components.AppDarkButton
@@ -74,6 +83,7 @@ import com.eggheadengineers.nimons360.ui.components.AppDestructiveButton
 import com.eggheadengineers.nimons360.ui.components.AppFilterPill
 import com.eggheadengineers.nimons360.ui.components.AppGrid
 import com.eggheadengineers.nimons360.ui.components.AppSearchBar
+import com.eggheadengineers.nimons360.ui.components.AppSecondaryButton
 import com.eggheadengineers.nimons360.ui.components.AppSectionHeader
 import com.eggheadengineers.nimons360.ui.components.AppTextField
 import com.eggheadengineers.nimons360.ui.components.AvatarCircle
@@ -92,6 +102,7 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.CustomZoomButtonsController
+import java.io.File
 import kotlin.math.roundToInt
 import android.graphics.Color as AndroidColor
 import com.eggheadengineers.nimons360.ui.theme.Surface as SurfaceColor
@@ -99,20 +110,67 @@ import com.eggheadengineers.nimons360.ui.theme.Surface as SurfaceColor
 private sealed interface MapBottomPanelState {
     data object AddFavorite : MapBottomPanelState
     data class FavoriteDetail(val favoriteId: Long) : MapBottomPanelState
+    data class EditFavorite(val favoriteId: Long) : MapBottomPanelState
     data class MemberDetail(val memberId: String) : MapBottomPanelState
     data object MyLocation : MapBottomPanelState
+}
+
+private enum class MapPhotoTarget {
+    Add,
+    Edit,
 }
 
 @Composable
 fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     var searchQuery by remember { mutableStateOf("") }
     var currentUserName by remember { mutableStateOf("You") }
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
     var selectedFavorite by remember { mutableStateOf<FavoriteLocation?>(null) }
     var selectedFavoriteSnapshot by remember { mutableStateOf<FavoriteLocation?>(null) }
     var selectedMemberSnapshot by remember { mutableStateOf<MemberPresence?>(null) }
+    var editingFavorite by remember { mutableStateOf<FavoriteLocation?>(null) }
+    var addPhotos by remember { mutableStateOf<List<ImagePayload>>(emptyList()) }
+    var editPhotos by remember { mutableStateOf<List<ImagePayload>>(emptyList()) }
+    var photoTarget by remember { mutableStateOf(MapPhotoTarget.Add) }
+    var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
+
+    fun appendPhoto(uri: Uri?) {
+        if (uri == null) return
+        coroutineScope.launch {
+            readImagePayload(context, uri).onSuccess { payload ->
+                when (photoTarget) {
+                    MapPhotoTarget.Add -> addPhotos = addPhotos + payload
+                    MapPhotoTarget.Edit -> editPhotos = editPhotos + payload
+                }
+            }
+        }
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent(),
+    ) { uri -> appendPhoto(uri) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicture(),
+    ) { success ->
+        if (success) appendPhoto(pendingCameraUri)
+        pendingCameraUri = null
+    }
+
+    fun pickPhoto(target: MapPhotoTarget) {
+        photoTarget = target
+        galleryLauncher.launch("image/*")
+    }
+
+    fun takePhoto(target: MapPhotoTarget) {
+        photoTarget = target
+        val uri = createCacheImageUri(context, "marked_location_photos", "marked_location")
+        pendingCameraUri = uri
+        cameraLauncher.launch(uri)
+    }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -259,6 +317,9 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
 
             val panelState = when {
                 state.pendingFavoriteLat != null -> MapBottomPanelState.AddFavorite
+                editingFavorite != null -> {
+                    editingFavorite?.id?.let(MapBottomPanelState::EditFavorite) ?: MapBottomPanelState.MyLocation
+                }
                 selectedFavorite != null -> {
                     selectedFavorite?.id?.let(MapBottomPanelState::FavoriteDetail) ?: MapBottomPanelState.MyLocation
                 }
@@ -288,9 +349,27 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
             ) { currentPanelState ->
                 when (currentPanelState) {
                     MapBottomPanelState.AddFavorite -> {
+                        val lat = state.pendingFavoriteLat ?: 0.0
+                        val lng = state.pendingFavoriteLng ?: 0.0
                         AddFavoritePanel(
-                            onConfirm = { name -> viewModel.confirmAddFavorite(name) },
-                            onDismiss = { viewModel.cancelAddFavorite() },
+                            lat = lat,
+                            lng = lng,
+                            photos = addPhotos,
+                            onAddPhotoFromGallery = { pickPhoto(MapPhotoTarget.Add) },
+                            onTakePhoto = { takePhoto(MapPhotoTarget.Add) },
+                            onNavigate = { openGoogleMapsNavigation(context, lat, lng) },
+                            onConfirm = { name, description ->
+                                viewModel.confirmAddFavorite(
+                                    name = name,
+                                    description = description,
+                                    photos = addPhotos.map { it.toFavoritePhotoInput() },
+                                )
+                                addPhotos = emptyList()
+                            },
+                            onDismiss = {
+                                addPhotos = emptyList()
+                                viewModel.cancelAddFavorite()
+                            },
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -299,11 +378,43 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
                         if (favorite == null || favorite.id != currentPanelState.favoriteId) return@AnimatedContent
                         FavoriteDetailPanel(
                             favorite = favorite,
+                            onNavigate = { openGoogleMapsNavigation(context, favorite.lat, favorite.lng) },
+                            onEdit = {
+                                editPhotos = emptyList()
+                                editingFavorite = favorite
+                            },
                             onDelete = {
                                 viewModel.deleteFavorite(favorite.id)
                                 selectedFavorite = null
+                                selectedFavoriteSnapshot = null
                             },
                             onDismiss = { selectedFavorite = null },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    is MapBottomPanelState.EditFavorite -> {
+                        val favorite = editingFavorite ?: selectedFavoriteSnapshot
+                        if (favorite == null || favorite.id != currentPanelState.favoriteId) return@AnimatedContent
+                        EditFavoritePanel(
+                            favorite = favorite,
+                            photosToAdd = editPhotos,
+                            onAddPhotoFromGallery = { pickPhoto(MapPhotoTarget.Edit) },
+                            onTakePhoto = { takePhoto(MapPhotoTarget.Edit) },
+                            onSave = { name, description ->
+                                viewModel.updateFavorite(
+                                    id = favorite.id,
+                                    name = name,
+                                    description = description,
+                                    photosToAdd = editPhotos.map { it.toFavoritePhotoInput() },
+                                )
+                                editPhotos = emptyList()
+                                editingFavorite = null
+                                selectedFavorite = null
+                            },
+                            onDismiss = {
+                                editPhotos = emptyList()
+                                editingFavorite = null
+                            },
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -538,6 +649,11 @@ private fun OsmMapView(
                 val existing = favoriteMarkers[fav.id]
                 if (existing != null) {
                     existing.position = point
+                    existing.title = fav.name
+                    existing.setOnMarkerClickListener { _, _ ->
+                        onFavoriteClick(fav)
+                        true
+                    }
                 } else {
                     val capturedFav = fav
                     val marker = Marker(mapView).apply {
@@ -892,11 +1008,18 @@ private fun makeStarDrawable(res: Resources, color: Int): BitmapDrawable {
 
 @Composable
 private fun AddFavoritePanel(
-    onConfirm: (String) -> Unit,
+    lat: Double,
+    lng: Double,
+    photos: List<ImagePayload>,
+    onAddPhotoFromGallery: () -> Unit,
+    onTakePhoto: () -> Unit,
+    onNavigate: () -> Unit,
+    onConfirm: (String, String) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var name by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
 
     Surface(
         modifier = modifier,
@@ -917,7 +1040,7 @@ private fun AddFavoritePanel(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Save favorite location",
+                    text = "Mark location",
                     style = MaterialTheme.typography.titleSmall,
                     color = TextPrimary,
                 )
@@ -930,7 +1053,7 @@ private fun AddFavoritePanel(
             }
 
             Text(
-                text = "Give this place a name so you can find it easily.",
+                text = "Lat ${"%.5f".format(lat)}   Lon ${"%.5f".format(lng)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary,
             )
@@ -942,13 +1065,33 @@ private fun AddFavoritePanel(
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(
-                    onDone = { if (name.isNotBlank()) onConfirm(name.trim()) },
+                    onDone = { if (name.isNotBlank()) onConfirm(name.trim(), description.trim()) },
                 ),
             )
 
+            AppTextField(
+                value = description,
+                onValueChange = { description = it },
+                placeholder = { Text("Description") },
+                singleLine = false,
+            )
+
+            PhotoAttachmentRow(
+                existingPaths = emptyList(),
+                newPhotos = photos,
+                onAddPhotoFromGallery = onAddPhotoFromGallery,
+                onTakePhoto = onTakePhoto,
+            )
+
+            AppSecondaryButton(
+                text = "Open Google Maps",
+                onClick = onNavigate,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
             AppDarkButton(
-                text = "Save location",
-                onClick = { if (name.isNotBlank()) onConfirm(name.trim()) },
+                text = "Save marked location",
+                onClick = { if (name.isNotBlank()) onConfirm(name.trim(), description.trim()) },
                 enabled = name.isNotBlank(),
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -959,6 +1102,8 @@ private fun AddFavoritePanel(
 @Composable
 private fun FavoriteDetailPanel(
     favorite: FavoriteLocation,
+    onNavigate: () -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
@@ -995,16 +1140,206 @@ private fun FavoriteDetailPanel(
             }
 
             Text(
+                text = favorite.description.ifBlank { "No description added." },
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextPrimary,
+            )
+
+            Text(
                 text = "Lat ${"%.5f".format(favorite.lat)}   Lon ${"%.5f".format(favorite.lng)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary,
             )
 
+            if (favorite.photoPaths.isNotEmpty()) {
+                LocationPhotoStrip(paths = favorite.photoPaths)
+            }
+
+            AppSecondaryButton(
+                text = "Open Google Maps",
+                onClick = onNavigate,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            AppDarkButton(
+                text = "Edit marked location",
+                onClick = onEdit,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
             AppDestructiveButton(
-                text = "Remove favorite",
+                text = "Delete marked location",
                 onClick = onDelete,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
     }
+}
+
+@Composable
+private fun EditFavoritePanel(
+    favorite: FavoriteLocation,
+    photosToAdd: List<ImagePayload>,
+    onAddPhotoFromGallery: () -> Unit,
+    onTakePhoto: () -> Unit,
+    onSave: (String, String) -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var name by remember(favorite.id) { mutableStateOf(favorite.name) }
+    var description by remember(favorite.id) { mutableStateOf(favorite.description) }
+
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(AppGrid.CardRadius),
+        color = SurfaceColor.copy(alpha = 0.96f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Border.copy(alpha = 0.34f)),
+        shadowElevation = 8.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(AppGrid.Space4),
+            verticalArrangement = Arrangement.spacedBy(AppGrid.Space3),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Edit marked location",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = TextPrimary,
+                )
+                Text(
+                    text = "Cancel",
+                    modifier = Modifier.clickable(onClick = onDismiss),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextSecondary,
+                )
+            }
+
+            AppTextField(
+                value = name,
+                onValueChange = { name = it },
+                placeholder = { Text("Location name") },
+                singleLine = true,
+            )
+
+            AppTextField(
+                value = description,
+                onValueChange = { description = it },
+                placeholder = { Text("Description") },
+                singleLine = false,
+            )
+
+            PhotoAttachmentRow(
+                existingPaths = favorite.photoPaths,
+                newPhotos = photosToAdd,
+                onAddPhotoFromGallery = onAddPhotoFromGallery,
+                onTakePhoto = onTakePhoto,
+            )
+
+            AppDarkButton(
+                text = "Save changes",
+                onClick = { onSave(name.trim(), description.trim()) },
+                enabled = name.isNotBlank(),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun PhotoAttachmentRow(
+    existingPaths: List<String>,
+    newPhotos: List<ImagePayload>,
+    onAddPhotoFromGallery: () -> Unit,
+    onTakePhoto: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppGrid.Space2)) {
+        Text(
+            text = "${existingPaths.size + newPhotos.size} photos",
+            style = MaterialTheme.typography.bodySmall,
+            color = TextSecondary,
+        )
+
+        if (existingPaths.isNotEmpty()) {
+            LocationPhotoStrip(paths = existingPaths)
+        }
+
+        if (newPhotos.isNotEmpty()) {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(AppGrid.Space2)) {
+                items(newPhotos) { photo ->
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = SurfaceColor.copy(alpha = 0.96f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Border.copy(alpha = 0.34f)),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(width = 92.dp, height = 68.dp)
+                                .padding(AppGrid.Space2),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = photo.fileName,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextSecondary,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(AppGrid.Space2)) {
+            AppSecondaryButton(
+                text = "Gallery",
+                onClick = onAddPhotoFromGallery,
+                modifier = Modifier.weight(1f),
+            )
+            AppSecondaryButton(
+                text = "Camera",
+                onClick = onTakePhoto,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun LocationPhotoStrip(paths: List<String>) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(AppGrid.Space2)) {
+        items(paths, key = { it }) { path ->
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = SurfaceColor.copy(alpha = 0.96f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Border.copy(alpha = 0.34f)),
+            ) {
+                AsyncImage(
+                    model = File(path),
+                    contentDescription = "Marked location photo",
+                    modifier = Modifier.size(width = 92.dp, height = 68.dp),
+                )
+            }
+        }
+    }
+}
+
+private fun ImagePayload.toFavoritePhotoInput() = FavoriteLocationPhotoInput(
+    fileName = fileName,
+    bytes = bytes,
+)
+
+private fun openGoogleMapsNavigation(context: android.content.Context, lat: Double, lng: Double) {
+    val uri = Uri.parse("google.navigation:q=$lat,$lng")
+    val mapsIntent = Intent(Intent.ACTION_VIEW, uri).apply {
+        setPackage("com.google.android.apps.maps")
+    }
+    val fallbackIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$lat,$lng"))
+    context.startActivity(
+        if (mapsIntent.resolveActivity(context.packageManager) != null) mapsIntent else fallbackIntent
+    )
 }

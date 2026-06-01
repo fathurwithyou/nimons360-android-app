@@ -8,9 +8,11 @@ import com.eggheadengineers.nimons360.core.battery.BatteryState
 import com.eggheadengineers.nimons360.core.location.LocationTracker
 import com.eggheadengineers.nimons360.core.network.ConnectivityObserver
 import com.eggheadengineers.nimons360.core.network.NetworkStatus
+import com.eggheadengineers.nimons360.core.preferences.UserPreferenceStore
 import com.eggheadengineers.nimons360.core.sensor.OrientationProvider
 import com.eggheadengineers.nimons360.domain.model.Family
 import com.eggheadengineers.nimons360.domain.model.FavoriteLocation
+import com.eggheadengineers.nimons360.domain.model.FavoriteLocationPhotoInput
 import com.eggheadengineers.nimons360.domain.model.MemberPresence
 import com.eggheadengineers.nimons360.domain.repository.FamilyRepository
 import com.eggheadengineers.nimons360.domain.repository.FavoriteLocationRepository
@@ -58,6 +60,7 @@ class MapViewModel(
     private val orientationProvider: OrientationProvider,
     private val batteryProvider: BatteryProvider,
     private val connectivityObserver: ConnectivityObserver,
+    private val userPreferenceStore: UserPreferenceStore,
 ) : ViewModel() {
     companion object {
         private const val PRESENCE_FAMILY_REFRESH_COOLDOWN_MS = 8_000L
@@ -207,6 +210,7 @@ class MapViewModel(
                 delay(1_000)
                 val s = _uiState.value
                 if (s.myLat == 0.0 && s.myLng == 0.0) continue
+                if (!userPreferenceStore.isLocationSharingEnabled()) continue
                 val internetStatus = when (s.networkStatus) {
                     NetworkStatus.WIFI -> "wifi"
                     NetworkStatus.MOBILE -> "mobile"
@@ -228,13 +232,17 @@ class MapViewModel(
         _uiState.update { it.copy(pendingFavoriteLat = lat, pendingFavoriteLng = lng) }
     }
 
-    fun confirmAddFavorite(name: String) {
+    fun confirmAddFavorite(
+        name: String,
+        description: String,
+        photos: List<FavoriteLocationPhotoInput> = emptyList(),
+    ) {
         val state = _uiState.value
         val lat = state.pendingFavoriteLat ?: return
         val lng = state.pendingFavoriteLng ?: return
         _uiState.update { it.copy(pendingFavoriteLat = null, pendingFavoriteLng = null) }
         viewModelScope.launch {
-            favoriteLocationRepository.add(name, lat, lng)
+            favoriteLocationRepository.add(name, description, lat, lng, photos)
         }
     }
 
@@ -245,6 +253,17 @@ class MapViewModel(
     fun deleteFavorite(id: Long) {
         viewModelScope.launch {
             favoriteLocationRepository.delete(id)
+        }
+    }
+
+    fun updateFavorite(
+        id: Long,
+        name: String,
+        description: String,
+        photosToAdd: List<FavoriteLocationPhotoInput> = emptyList(),
+    ) {
+        viewModelScope.launch {
+            favoriteLocationRepository.update(id, name, description, photosToAdd)
         }
     }
 
@@ -267,11 +286,12 @@ class MapViewModel(
         private val orientationProvider: OrientationProvider,
         private val batteryProvider: BatteryProvider,
         private val connectivityObserver: ConnectivityObserver,
+        private val userPreferenceStore: UserPreferenceStore,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>) = MapViewModel(
             presenceRepo, familyRepo, favoriteLocationRepo, locationTracker,
-            orientationProvider, batteryProvider, connectivityObserver,
+            orientationProvider, batteryProvider, connectivityObserver, userPreferenceStore,
         ) as T
     }
 }
