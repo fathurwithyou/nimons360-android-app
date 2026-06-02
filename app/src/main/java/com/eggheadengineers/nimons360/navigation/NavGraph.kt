@@ -1,5 +1,6 @@
 package com.eggheadengineers.nimons360.navigation
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -30,8 +31,13 @@ sealed class Screen(val route: String) {
     data object Families : Screen("families")
     data object CreateFamily : Screen("create_family")
     data object Profile : Screen("profile")
-    data object FamilyDetail : Screen("family_detail/{familyId}") {
-        fun createRoute(familyId: String) = "family_detail/$familyId"
+    data object FamilyDetail : Screen("family_detail/{familyId}?code={familyCode}") {
+        fun createRoute(familyId: String, familyCode: String? = null): String =
+            if (familyCode.isNullOrBlank()) {
+                "family_detail/$familyId"
+            } else {
+                "family_detail/$familyId?code=${Uri.encode(familyCode)}"
+            }
     }
     data object LiveBroadcaster : Screen("live_broadcaster/{familyId}") {
         fun createRoute(familyId: String) = "live_broadcaster/$familyId"
@@ -81,6 +87,7 @@ fun NimonsNavGraph(
                     app.presenceRepository, app.familyRepository,
                     app.favoriteLocationRepository, app.locationTracker,
                     app.orientationProvider, app.batteryProvider, app.connectivityObserver,
+                    app.userPreferenceStore,
                 )
             )
             MapScreen(
@@ -114,7 +121,11 @@ fun NimonsNavGraph(
 
         composable(Screen.Profile.route) {
             val vm: ProfileViewModel = viewModel(
-                factory = ProfileViewModel.Factory( app.authRepository, app.profileRepository)
+                factory = ProfileViewModel.Factory(
+                    app.authRepository,
+                    app.profileRepository,
+                    app.userPreferenceStore,
+                )
             )
             ProfileScreen(
                 viewModel = vm,
@@ -129,18 +140,28 @@ fun NimonsNavGraph(
 
         composable(
             route = Screen.FamilyDetail.route,
-            arguments = listOf(navArgument("familyId") { type = NavType.StringType }),
+            arguments = listOf(
+                navArgument("familyId") { type = NavType.StringType },
+                navArgument("familyCode") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
         ) { backStackEntry ->
             val familyId = backStackEntry.arguments?.getString("familyId") ?: return@composable
+            val familyCode = backStackEntry.arguments?.getString("familyCode")
             val vm: FamilyDetailViewModel = viewModel(
                 factory = FamilyDetailViewModel.Factory(
                     familyId,
                     app.familyRepository,
                     app.liveStreamRepository,
+                    app.notificationRepository,
                 ),
             )
             FamilyDetailScreen(
                 viewModel = vm,
+                initialJoinCode = familyCode,
                 onBack = { navController.popBackStack() },
                 onGoLive = { navController.navigate(Screen.LiveBroadcaster.createRoute(familyId)) },
                 onWatchStream = { streamId ->

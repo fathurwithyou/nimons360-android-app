@@ -1,5 +1,7 @@
 package com.eggheadengineers.nimons360
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -61,25 +63,49 @@ private data class ConnectionBannerState(
     val connected: Boolean,
 )
 
+private data class FamilyDeepLinkTarget(
+    val familyId: String,
+    val code: String?,
+)
+
 class MainActivity : ComponentActivity() {
+    private val pendingFamilyDeepLink = mutableStateOf<FamilyDeepLinkTarget?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        pendingFamilyDeepLink.value = intent.extractFamilyDeepLinkId()
         val app = application as NimonsApplication
         val isLoggedIn = runBlocking { app.sessionManager.isLoggedIn() }
         val startDestination = if (isLoggedIn) Screen.Home.route else Screen.Login.route
         setContent {
             Nimons360Theme {
-                NimonsApp(app = app, startDestination = startDestination)
+                NimonsApp(
+                    app = app,
+                    startDestination = startDestination,
+                    pendingFamilyDeepLink = pendingFamilyDeepLink.value,
+                    onFamilyDeepLinkConsumed = { pendingFamilyDeepLink.value = null },
+                )
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        pendingFamilyDeepLink.value = intent.extractFamilyDeepLinkId()
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun NimonsApp(app: NimonsApplication, startDestination: String) {
+private fun NimonsApp(
+    app: NimonsApplication,
+    startDestination: String,
+    pendingFamilyDeepLink: FamilyDeepLinkTarget?,
+    onFamilyDeepLinkConsumed: () -> Unit,
+) {
     val navController = rememberNavController()
     var showStartupSplash by rememberSaveable { mutableStateOf(true) }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -125,6 +151,16 @@ private fun NimonsApp(app: NimonsApplication, startDestination: String) {
                 popUpTo(0) { inclusive = true }
             }
         }
+    }
+
+    LaunchedEffect(pendingFamilyDeepLink, currentRoute) {
+        val target = pendingFamilyDeepLink ?: return@LaunchedEffect
+        if (currentRoute == null || currentRoute == Screen.Login.route) return@LaunchedEffect
+
+        navController.navigate(Screen.FamilyDetail.createRoute(target.familyId, target.code)) {
+            launchSingleTop = true
+        }
+        onFamilyDeepLinkConsumed()
     }
 
     val bottomNavItems = listOf(
@@ -229,4 +265,14 @@ private fun NimonsApp(app: NimonsApplication, startDestination: String) {
             }
         }
     }    
+}
+
+private fun Intent.extractFamilyDeepLinkId(): FamilyDeepLinkTarget? {
+    val uri: Uri = data ?: return null
+    if (uri.scheme != "nimons360" || uri.host != "family") return null
+    val familyId = uri.pathSegments.firstOrNull()?.takeIf { it.isNotBlank() } ?: return null
+    return FamilyDeepLinkTarget(
+        familyId = familyId,
+        code = uri.getQueryParameter("code")?.takeIf { it.isNotBlank() },
+    )
 }
