@@ -13,6 +13,7 @@ import com.eggheadengineers.nimons360.domain.model.FamilyDetail
 import com.eggheadengineers.nimons360.domain.model.LiveStream
 import com.eggheadengineers.nimons360.domain.repository.FamilyRepository
 import com.eggheadengineers.nimons360.domain.repository.LiveStreamRepository
+import com.eggheadengineers.nimons360.domain.repository.NotificationRepository
 
 data class FamilyDetailUiState(
     val detail: FamilyDetail? = null,
@@ -32,6 +33,7 @@ class FamilyDetailViewModel(
     private val familyId: String,
     private val familyRepository: FamilyRepository,
     private val liveStreamRepository: LiveStreamRepository,
+    private val notificationRepository: NotificationRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(FamilyDetailUiState())
     val uiState: StateFlow<FamilyDetailUiState> = _uiState
@@ -118,6 +120,86 @@ class FamilyDetailViewModel(
         }
     }
 
+    fun sendFamilyNotification(message: String) {
+        val trimmed = message.trim()
+        if (trimmed.isBlank()) {
+            showFeedback(
+                FamilyDetailFeedback(
+                    title = "Message is empty",
+                    message = "Write a short message before sending.",
+                    isSuccess = false,
+                )
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            notificationRepository.sendFamilyNotification(familyId, trimmed).fold(
+                onSuccess = {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        feedback = FamilyDetailFeedback(
+                            title = "Notification sent",
+                            message = "Your family members will receive the message.",
+                            isSuccess = true,
+                        ),
+                    )
+                },
+                onFailure = {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        feedback = FamilyDetailFeedback(
+                            title = "Couldn't send notification",
+                            message = it.userFriendlyMessage("Please try again in a moment."),
+                            isSuccess = false,
+                        ),
+                    )
+                },
+            )
+        }
+    }
+
+    fun sendGreeting(targetUserId: String, message: String) {
+        val trimmed = message.trim()
+        if (targetUserId.isBlank() || trimmed.isBlank()) {
+            showFeedback(
+                FamilyDetailFeedback(
+                    title = "Greeting is incomplete",
+                    message = "Choose a target member and message first.",
+                    isSuccess = false,
+                )
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            notificationRepository.sendGreeting(familyId, targetUserId, trimmed).fold(
+                onSuccess = {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        feedback = FamilyDetailFeedback(
+                            title = "Greeting sent",
+                            message = "Your greeting was delivered.",
+                            isSuccess = true,
+                        ),
+                    )
+                },
+                onFailure = {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        feedback = FamilyDetailFeedback(
+                            title = "Couldn't send greeting",
+                            message = it.userFriendlyMessage("Please try again in a moment."),
+                            isSuccess = false,
+                        ),
+                    )
+                },
+            )
+        }
+    }
+
     fun showFeedback(feedback: FamilyDetailFeedback) {
         _uiState.value = _uiState.value.copy(feedback = feedback)
     }
@@ -130,9 +212,10 @@ class FamilyDetailViewModel(
         private val familyId: String,
         private val repo: FamilyRepository,
         private val liveStreamRepository: LiveStreamRepository,
+        private val notificationRepository: NotificationRepository,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>) =
-            FamilyDetailViewModel(familyId, repo, liveStreamRepository) as T
+            FamilyDetailViewModel(familyId, repo, liveStreamRepository, notificationRepository) as T
     }
 }
