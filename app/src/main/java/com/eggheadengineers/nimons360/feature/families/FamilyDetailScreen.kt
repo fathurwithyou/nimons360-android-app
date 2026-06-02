@@ -3,6 +3,8 @@ package com.eggheadengineers.nimons360.feature.families
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
+import com.eggheadengineers.nimons360.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,11 +22,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.FiberManualRecord
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,10 +39,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -59,6 +68,7 @@ import com.eggheadengineers.nimons360.feature.livestream.LiveStreamsSection
 import com.eggheadengineers.nimons360.ui.components.AppCompactSecondaryButton
 import com.eggheadengineers.nimons360.ui.components.AppDestructiveButton
 import com.eggheadengineers.nimons360.ui.components.AppDarkButton
+import com.eggheadengineers.nimons360.ui.components.AppFilterPill
 import com.eggheadengineers.nimons360.ui.components.AppGrid
 import com.eggheadengineers.nimons360.ui.components.AppSearchBar
 import com.eggheadengineers.nimons360.ui.components.AppSecondaryButton
@@ -77,13 +87,38 @@ import com.eggheadengineers.nimons360.ui.theme.SurfaceContainerLow
 import com.eggheadengineers.nimons360.ui.theme.TextPrimary
 import com.eggheadengineers.nimons360.ui.theme.TextSecondary
 import com.eggheadengineers.nimons360.ui.theme.TextTertiary
+import java.util.Calendar
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 
 private const val INITIAL_MEMBER_LIMIT = 5
+
+@Composable
+private fun GoLiveIconButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = modifier.size(48.dp),
+    ) {
+        Icon(
+            painter = androidx.compose.ui.res.painterResource(id = R.drawable.ic_go_live),
+            contentDescription = "Go Live",
+            tint = Color.Black,
+            modifier = Modifier.size(36.dp)
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FamilyDetailScreen(
     viewModel: FamilyDetailViewModel,
+    initialJoinCode: String? = null,
     onBack: () -> Unit,
     onGoLive: () -> Unit = {},
     onWatchStream: (String) -> Unit = {},
@@ -92,7 +127,10 @@ fun FamilyDetailScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     var showJoinDialog by remember { mutableStateOf(false) }
+    var joinDialogInitialCode by remember { mutableStateOf("") }
+    var consumedInitialJoinCode by remember { mutableStateOf(false) }
     var showLeaveDialog by remember { mutableStateOf(false) }
+    var showNotificationSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.feedback) {
         state.feedback?.let {
@@ -108,6 +146,16 @@ fun FamilyDetailScreen(
                 )
             }
             viewModel.clearFeedback()
+        }
+    }
+
+    LaunchedEffect(state.detail?.id, initialJoinCode) {
+        val code = initialJoinCode?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
+        val detail = state.detail ?: return@LaunchedEffect
+        if (!detail.isMember && !consumedInitialJoinCode) {
+            joinDialogInitialCode = code
+            showJoinDialog = true
+            consumedInitialJoinCode = true
         }
     }
 
@@ -155,10 +203,28 @@ fun FamilyDetailScreen(
                     detail = state.detail!!,
                     liveStreams = state.liveStreams,
                     modifier = Modifier.padding(top = innerPadding.calculateTopPadding()),
-                    onJoinClick = { showJoinDialog = true },
+                    onJoinClick = {
+                        joinDialogInitialCode = ""
+                        showJoinDialog = true
+                    },
                     onLeaveClick = { showLeaveDialog = true },
                     onGoLive = onGoLive,
                     onWatchStream = onWatchStream,
+                    onNotifyClick = { showNotificationSheet = true },
+                    onShareClick = {
+                        val detail = state.detail
+                        if (detail?.code.isNullOrBlank()) {
+                            viewModel.showFeedback(
+                                FamilyDetailFeedback(
+                                    title = "Family code unavailable",
+                                    message = "Reload the family detail before sharing the invite link.",
+                                    isSuccess = false,
+                                ),
+                            )
+                        } else if (detail != null) {
+                            shareFamilyLink(context, detail)
+                        }
+                    },
                     onCopyCode = { code ->
                         val manager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         manager.setPrimaryClip(ClipData.newPlainText("Family Code", code))
@@ -177,6 +243,7 @@ fun FamilyDetailScreen(
 
     if (showJoinDialog) {
         JoinFamilyDialog(
+            initialCode = joinDialogInitialCode,
             onDismiss = { showJoinDialog = false },
             onConfirm = { code ->
                 viewModel.joinFamily(code)
@@ -206,6 +273,23 @@ fun FamilyDetailScreen(
                 )
             },
         )
+    }
+
+    if (showNotificationSheet) {
+        state.detail?.let { detail ->
+            FamilyNotificationBottomSheet(
+                detail = detail,
+                onDismiss = { showNotificationSheet = false },
+                onSendBroadcast = { message ->
+                    viewModel.sendFamilyNotification(message)
+                    showNotificationSheet = false
+                },
+                onSendGreeting = { targetUserId, message ->
+                    viewModel.sendGreeting(targetUserId, message)
+                    showNotificationSheet = false
+                },
+            )
+        }
     }
 }
 
@@ -261,6 +345,8 @@ private fun FamilyDetailContent(
     onLeaveClick: () -> Unit,
     onGoLive: () -> Unit,
     onWatchStream: (String) -> Unit,
+    onNotifyClick: () -> Unit,
+    onShareClick: () -> Unit,
     onCopyCode: (String) -> Unit,
 ) {
     var showAllMembers by remember { mutableStateOf(false) }
@@ -495,11 +581,42 @@ private fun FamilyDetailContent(
         item {
             Column(verticalArrangement = Arrangement.spacedBy(AppGrid.Space3)) {
                 if (detail.isMember) {
-                    AppDarkButton(
-                        text = "Go live",
-                        onClick = onGoLive,
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                    )
+                        horizontalArrangement = Arrangement.spacedBy(AppGrid.Space3),
+                    ) {
+                        GoLiveIconButton(
+                            onClick = onGoLive,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp),
+                        )
+                        IconButton(
+                            onClick = onShareClick,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp),
+                            enabled = !detail.code.isNullOrBlank(),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Share,
+                                contentDescription = "Share family link",
+                                tint = if (!detail.code.isNullOrBlank()) Primary else TextSecondary,
+                            )
+                        }
+                        IconButton(
+                            onClick = onNotifyClick,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Notifications,
+                                contentDescription = "Notify family",
+                                tint = Primary,
+                            )
+                        }
+                    }
                     AppDestructiveButton(
                         text = "Leave family",
                         onClick = onLeaveClick,
@@ -524,10 +641,7 @@ private fun MemberListItem(member: FamilyMember) {
         horizontalArrangement = Arrangement.spacedBy(AppGrid.Space3),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AvatarCircle(
-            initial = member.name.firstOrNull()?.uppercaseChar() ?: '?',
-            size = 36,
-        )
+        MemberAvatar(member = member)
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(1.dp),
@@ -553,11 +667,36 @@ private fun MemberListItem(member: FamilyMember) {
 }
 
 @Composable
+private fun MemberAvatar(member: FamilyMember) {
+    val imageUrl = member.profileImageUrl?.let(::resolveUserImageUrl)
+    if (imageUrl.isNullOrBlank()) {
+        AvatarCircle(
+            initial = member.name.firstOrNull()?.uppercaseChar() ?: '?',
+            size = 36,
+        )
+    } else {
+        Surface(
+            modifier = Modifier.size(36.dp),
+            shape = RoundedCornerShape(50),
+            color = SurfaceContainerLow,
+        ) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = "${member.name} profile photo",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        }
+    }
+}
+
+@Composable
 private fun JoinFamilyDialog(
+    initialCode: String = "",
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
-    var code by remember { mutableStateOf("") }
+    var code by remember(initialCode) { mutableStateOf(initialCode.uppercase().take(6)) }
 
     FamilyActionDialog(
         title = "Join family",
@@ -588,3 +727,127 @@ private fun JoinFamilyDialog(
         },
     )
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FamilyNotificationBottomSheet(
+    detail: FamilyDetail,
+    onDismiss: () -> Unit,
+    onSendBroadcast: (String) -> Unit,
+    onSendGreeting: (String, String) -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState()
+    val greetingMembers = detail.members.filter { it.id.isNotBlank() }
+    var message by remember { mutableStateOf("") }
+    var selectedMemberId by remember(greetingMembers) { mutableStateOf(greetingMembers.firstOrNull()?.id.orEmpty()) }
+    var greeting by remember { mutableStateOf(defaultGreetingMessage()) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        containerColor = Surface,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = AppGrid.ScreenHorizontal)
+                .padding(bottom = AppGrid.Space8),
+            verticalArrangement = Arrangement.spacedBy(AppGrid.Space4),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(AppGrid.Space1)) {
+                Text(
+                    text = "Notify family",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = TextPrimary,
+                )
+                Text(
+                    text = detail.name,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary,
+                )
+            }
+
+            AppTextField(
+                value = message,
+                onValueChange = { message = it },
+                label = { Text("Broadcast message") },
+                singleLine = false,
+            )
+            AppDarkButton(
+                text = "Send to family",
+                onClick = { onSendBroadcast(message) },
+                enabled = message.isNotBlank(),
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            HorizontalDivider(color = Border.copy(alpha = 0.3f))
+
+            Text(
+                text = "Quick greeting",
+                style = MaterialTheme.typography.titleMedium,
+                color = TextPrimary,
+            )
+
+            if (greetingMembers.isEmpty()) {
+                Text(
+                    text = "No targetable member IDs are available in this response.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary,
+                )
+            } else {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(AppGrid.Space2),
+                ) {
+                    items(greetingMembers, key = { it.id }) { member ->
+                        AppFilterPill(
+                            text = member.name.ifBlank { member.email },
+                            selected = member.id == selectedMemberId,
+                            onClick = { selectedMemberId = member.id },
+                        )
+                    }
+                }
+
+                AppTextField(
+                    value = greeting,
+                    onValueChange = { greeting = it },
+                    label = { Text("Greeting message") },
+                    singleLine = false,
+                )
+
+                AppSecondaryButton(
+                    text = "Send greeting",
+                    onClick = { onSendGreeting(selectedMemberId, greeting) },
+                    enabled = selectedMemberId.isNotBlank() && greeting.isNotBlank(),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
+}
+
+private fun defaultGreetingMessage(): String {
+    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+    return when (hour) {
+        in 5..11 -> "Good Morning!"
+        in 12..17 -> "Good Afternoon!"
+        else -> "Good Night!"
+    }
+}
+
+private fun shareFamilyLink(context: Context, detail: FamilyDetail) {
+    val code = detail.code ?: return
+    val link = "nimons360://family/${detail.id}?code=$code"
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, "Join ${detail.name} on Nimons360: $link")
+    }
+    context.startActivity(Intent.createChooser(intent, "Share family link"))
+}
+
+private fun resolveUserImageUrl(value: String): String =
+    if (value.startsWith("http://") || value.startsWith("https://")) {
+        value
+    } else {
+        "https://mad.labpro.hmif.dev/${value.removePrefix("/")}"
+    }

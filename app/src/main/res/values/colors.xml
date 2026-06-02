@@ -24,6 +24,7 @@
     <color name="xml_black_border">#141414</color>
     <color name="xml_black_highlight">#26FFFFFF</color>
     <color name="xml_black_pressed_highlight">#1AFFFFFF</color>
+    <color name="xml_black_pressed">#333333</color>
     <color name="xml_red">#D14040</color>
     <color name="xml_success">#2AA76B</color>
     <color name="xml_marble_one">#19000000</color>

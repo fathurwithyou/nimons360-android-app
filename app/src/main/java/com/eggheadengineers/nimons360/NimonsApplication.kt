@@ -2,8 +2,10 @@ package com.eggheadengineers.nimons360
 
 import android.app.Application
 import com.eggheadengineers.nimons360.core.battery.BatteryProvider
+import com.eggheadengineers.nimons360.core.files.FavoriteLocationPhotoStore
 import com.eggheadengineers.nimons360.core.location.LocationTracker
 import com.eggheadengineers.nimons360.core.network.ConnectivityObserver
+import com.eggheadengineers.nimons360.core.preferences.UserPreferenceStore
 import com.eggheadengineers.nimons360.core.sensor.OrientationProvider
 import com.eggheadengineers.nimons360.core.session.SessionManager
 import com.eggheadengineers.nimons360.data.local.AppDatabase
@@ -39,11 +41,14 @@ class NimonsApplication : Application() {
     val profileRepository: ProfileRepository by lazy { 
         ProfileRepositoryImpl(apiService) 
     }
+    val notificationRepository: NotificationRepository by lazy {
+        NotificationRepositoryImpl(apiService)
+    }
     val presenceRepository: PresenceRepository by lazy { 
         PresenceRepositoryImpl(wsClient, sessionManager) 
     }
     val favoriteLocationRepository: FavoriteLocationRepository by lazy {
-        FavoriteLocationRepositoryImpl(database.favoriteLocationDao())
+        FavoriteLocationRepositoryImpl(database.favoriteLocationDao(), FavoriteLocationPhotoStore(this))
     }
     val liveStreamRepository: LiveStreamRepository by lazy {
         LiveStreamRepositoryImpl(liveStreamApi, liveWsClient, sessionManager)
@@ -59,5 +64,8 @@ class NimonsApplication : Application() {
     }
     val batteryProvider by lazy { 
         BatteryProvider(this) 
+    }
+    val userPreferenceStore by lazy {
+        UserPreferenceStore(this)
     }
 }
