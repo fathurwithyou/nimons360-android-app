@@ -31,7 +31,8 @@ class DtoSerializationTest {
                         "id": 1,
                         "nim": "13521099",
                         "email": "alice@stei.itb.ac.id",
-                        "fullName": "Alice"
+                        "fullName": "Alice",
+                        "profileImageUrl": "https://example.com/alice.png"
                     }
                 }
             }
@@ -43,6 +44,7 @@ class DtoSerializationTest {
         assertEquals("Alice", result.data?.user?.fullName)
         assertEquals("13521099", result.data?.user?.nim)
         assertEquals("2026-12-31T00:00:00Z", result.data?.expiresAt)
+        assertEquals("https://example.com/alice.png", result.data?.user?.profileImageUrl)
     }
 
     @Test
@@ -61,12 +63,13 @@ class DtoSerializationTest {
 
     @Test
     fun `ProfileApiResponse deserializes with all optional nulls`() {
-        val raw = """{"data":{"id":1,"nim":"13521099","email":"a@b.com","fullName":"Alice","createdAt":null,"updatedAt":null}}"""
+        val raw = """{"data":{"id":1,"nim":"13521099","email":"a@b.com","fullName":"Alice","createdAt":null,"updatedAt":null,"profileImageUrl":"https://example.com/a.png"}}"""
         val result = json.decodeFromString<ProfileApiResponse>(raw)
         assertEquals(1, result.data?.id)
         assertEquals("13521099", result.data?.nim)
         assertNull(result.data?.createdAt)
         assertNull(result.data?.updatedAt)
+        assertEquals("https://example.com/a.png", result.data?.profileImageUrl)
     }
 
     @Test
@@ -91,7 +94,7 @@ class DtoSerializationTest {
                     "createdAt": null,
                     "updatedAt": null,
                     "members": [
-                        {"id": 10, "fullName": "Alice", "email": "a@t.com", "joinedAt": null},
+                        {"id": 10, "fullName": "Alice", "email": "a@t.com", "joinedAt": null, "profileImageUrl": "https://example.com/a.png"},
                         {"id": 11, "fullName": "Bob", "email": "b@t.com", "joinedAt": null}
                     ]
                 }]
@@ -103,6 +106,7 @@ class DtoSerializationTest {
         assertEquals("Family A", result.data?.first()?.name)
         assertEquals(2, result.data?.first()?.members?.size)
         assertEquals("Alice", result.data?.first()?.members?.first()?.fullName)
+        assertEquals("https://example.com/a.png", result.data?.first()?.members?.first()?.profileImageUrl)
     }
 
     @Test
@@ -203,7 +207,7 @@ class DtoSerializationTest {
     fun `MemberPresenceUpdatedPayloadDto deserializes with all optional fields`() {
         val raw = """
             {
-                "userId": "u1",
+                "userId": 1,
                 "id": null,
                 "fullName": "Alice",
                 "email": "alice@test.com",
@@ -212,24 +216,26 @@ class DtoSerializationTest {
                 "rotation": 180.0,
                 "batteryLevel": 92,
                 "isCharging": true,
-                "internetStatus": "wifi"
+                "internetStatus": "wifi",
+                "profileImageUrl": "https://example.com/alice.png"
             }
         """.trimIndent()
 
         val dto = json.decodeFromString<MemberPresenceUpdatedPayloadDto>(raw)
-        assertEquals("u1", dto.userId)
+        assertEquals(1, dto.userId)
         assertNull(dto.id)
         assertEquals(-6.891, dto.latitude!!, 0.0001)
         assertEquals(107.612, dto.longitude!!, 0.0001)
         assertEquals(180f, dto.rotation!!, 0.01f)
         assertEquals(92, dto.batteryLevel)
         assertTrue(dto.isCharging!!)
+        assertEquals("https://example.com/alice.png", dto.profileImageUrl)
     }
 
     @Test
     fun `MemberPresenceUpdatedPayloadDto deserializes with only userId present`() {
-        val dto = json.decodeFromString<MemberPresenceUpdatedPayloadDto>("""{"userId":"u3"}""")
-        assertEquals("u3", dto.userId)
+        val dto = json.decodeFromString<MemberPresenceUpdatedPayloadDto>("""{"userId":3}""")
+        assertEquals(3, dto.userId)
         assertNull(dto.latitude)
         assertNull(dto.batteryLevel)
         assertNull(dto.isCharging)
@@ -265,9 +271,10 @@ class DtoSerializationTest {
 
     @Test
     fun `FamilyMemberDto handles null id`() {
-        val raw = """{"id":null,"fullName":"Guest","email":"guest@test.com","joinedAt":null}"""
+        val raw = """{"id":null,"fullName":"Guest","email":"guest@test.com","joinedAt":null,"profileImageUrl":"https://example.com/guest.png"}"""
         val dto = json.decodeFromString<FamilyMemberDto>(raw)
         assertNull(dto.id)
         assertEquals("Guest", dto.fullName)
+        assertEquals("https://example.com/guest.png", dto.profileImageUrl)
     }
 }

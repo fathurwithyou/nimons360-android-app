@@ -1,6 +1,7 @@
 package com.eggheadengineers.nimons360.data.repository
 
 import com.eggheadengineers.nimons360.domain.model.FavoriteLocation
+import com.eggheadengineers.nimons360.domain.model.FavoriteLocationPhotoInput
 import com.eggheadengineers.nimons360.domain.repository.FavoriteLocationRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -18,7 +19,7 @@ class FavoriteLocationRepositoryImplTest {
 
     @Test
     fun `add stores a favorite location`() = runTest {
-        repo.add("Home", -6.89, 107.61)
+        repo.add("Home", "", -6.89, 107.61)
 
         val locations = repo.observeAll().first()
         assertEquals(1, locations.size)
@@ -29,9 +30,9 @@ class FavoriteLocationRepositoryImplTest {
 
     @Test
     fun `add multiple favorites stores all`() = runTest {
-        repo.add("Home", -6.89, 107.61)
-        repo.add("School", -6.90, 107.62)
-        repo.add("Office", -6.91, 107.63)
+        repo.add("Home", "", -6.89, 107.61)
+        repo.add("School", "", -6.90, 107.62)
+        repo.add("Office", "", -6.91, 107.63)
 
         val locations = repo.observeAll().first()
         assertEquals(3, locations.size)
@@ -39,8 +40,8 @@ class FavoriteLocationRepositoryImplTest {
 
     @Test
     fun `delete removes the correct location`() = runTest {
-        repo.add("Home", -6.89, 107.61)
-        repo.add("School", -6.90, 107.62)
+        repo.add("Home", "", -6.89, 107.61)
+        repo.add("School", "", -6.90, 107.62)
 
         val beforeDelete = repo.observeAll().first()
         assertEquals(2, beforeDelete.size)
@@ -55,7 +56,7 @@ class FavoriteLocationRepositoryImplTest {
 
     @Test
     fun `delete non-existent id does not crash`() = runTest {
-        repo.add("Home", -6.89, 107.61)
+        repo.add("Home", "", -6.89, 107.61)
         repo.delete(9999)
 
         val locations = repo.observeAll().first()
@@ -75,15 +76,46 @@ class FakeFavoriteLocationRepository : FavoriteLocationRepository {
 
     override fun observeAll(): Flow<List<FavoriteLocation>> = _locations
 
-    override suspend fun add(name: String, lat: Double, lng: Double) {
+    override suspend fun add(
+        name: String,
+        description: String,
+        lat: Double,
+        lng: Double,
+        photos: List<FavoriteLocationPhotoInput>,
+    ) {
         _locations.update { current ->
             current + FavoriteLocation(
                 id = nextId++,
                 name = name,
+                description = description,
                 lat = lat,
                 lng = lng,
+                photoPaths = photos.map { it.fileName },
                 createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis(),
             )
+        }
+    }
+
+    override suspend fun update(
+        id: Long,
+        name: String,
+        description: String,
+        photosToAdd: List<FavoriteLocationPhotoInput>,
+    ) {
+        _locations.update { current ->
+            current.map {
+                if (it.id == id) {
+                    it.copy(
+                        name = name,
+                        description = description,
+                        photoPaths = it.photoPaths + photosToAdd.map { photo -> photo.fileName },
+                        updatedAt = System.currentTimeMillis(),
+                    )
+                } else {
+                    it
+                }
+            }
         }
     }
 

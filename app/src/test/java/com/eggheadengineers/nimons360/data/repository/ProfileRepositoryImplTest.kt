@@ -9,8 +9,17 @@ import com.eggheadengineers.nimons360.data.dto.LoginApiResponse
 import com.eggheadengineers.nimons360.data.dto.LoginRequestDto
 import com.eggheadengineers.nimons360.data.dto.ProfileApiResponse
 import com.eggheadengineers.nimons360.data.dto.ProfileDto
+import com.eggheadengineers.nimons360.data.dto.SendFamilyNotificationApiResponse
+import com.eggheadengineers.nimons360.data.dto.SendFamilyNotificationRequestDto
+import com.eggheadengineers.nimons360.data.dto.SendGreetingNotificationApiResponse
+import com.eggheadengineers.nimons360.data.dto.SendGreetingNotificationRequestDto
+import com.eggheadengineers.nimons360.data.dto.SimpleApiResponse
+import com.eggheadengineers.nimons360.data.dto.SubscribeDeviceTokenApiResponse
+import com.eggheadengineers.nimons360.data.dto.SubscribeDeviceTokenRequestDto
+import com.eggheadengineers.nimons360.data.dto.UnsubscribeDeviceTokenApiResponse
 import com.eggheadengineers.nimons360.data.dto.UpdateProfileRequestDto
 import com.eggheadengineers.nimons360.data.network.ApiService
+import okhttp3.MultipartBody
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -33,6 +42,7 @@ class ProfileRepositoryImplTest {
                     id = 42, nim = "13521099",
                     email = "alice@stei.itb.ac.id", fullName = "Alice",
                     createdAt = "2025-01-01T00:00:00Z", updatedAt = null,
+                    profileImageUrl = "https://example.com/alice.png",
                 )
             )
         )
@@ -44,6 +54,7 @@ class ProfileRepositoryImplTest {
         assertEquals("42", profile.id)
         assertEquals("Alice", profile.name)
         assertEquals("alice@stei.itb.ac.id", profile.email)
+        assertEquals("https://example.com/alice.png", profile.profileImageUrl)
     }
 
     @Test
@@ -153,11 +164,17 @@ class FakeApiService : ApiService {
     var getAllFamiliesResponse: Response<FamilyListApiResponse> = stub()
     var getFamilyDetailResponse: Response<FamilyDetailApiResponse> = stub()
     var createFamilyResponse: Response<FamilyDetailApiResponse> = stub()
-    var joinFamilyResponse: Response<FamilyDetailApiResponse> = stub()
-    var leaveFamilyResponse: Response<FamilyDetailApiResponse> = stub()
+    var joinFamilyResponse: Response<SimpleApiResponse> = stub()
+    var leaveFamilyResponse: Response<SimpleApiResponse> = stub()
+    var uploadProfilePhotoResponse: Response<ProfileApiResponse> = stub()
+    var subscribeDeviceTokenResponse: Response<SubscribeDeviceTokenApiResponse> = stub()
+    var unsubscribeDeviceTokenResponse: Response<UnsubscribeDeviceTokenApiResponse> = stub()
+    var sendFamilyNotificationResponse: Response<SendFamilyNotificationApiResponse> = stub()
+    var sendGreetingNotificationResponse: Response<SendGreetingNotificationApiResponse> = stub()
 
     var lastUpdateProfileRequest: UpdateProfileRequestDto? = null
     var lastLoginRequest: LoginRequestDto? = null
+    var lastUploadProfilePhotoPart: MultipartBody.Part? = null
 
     override suspend fun login(request: LoginRequestDto): Response<LoginApiResponse> {
         lastLoginRequest = request
@@ -171,6 +188,11 @@ class FakeApiService : ApiService {
         return updateProfileResponse
     }
 
+    override suspend fun uploadProfilePhoto(photo: MultipartBody.Part): Response<ProfileApiResponse> {
+        lastUploadProfilePhotoPart = photo
+        return uploadProfilePhotoResponse
+    }
+
     override suspend fun getMyFamilies() = getMyFamiliesResponse
     override suspend fun getDiscoverFamilies() = getDiscoverFamiliesResponse
     override suspend fun getAllFamilies() = getAllFamiliesResponse
@@ -178,6 +200,18 @@ class FakeApiService : ApiService {
     override suspend fun createFamily(request: CreateFamilyRequestDto) = createFamilyResponse
     override suspend fun joinFamily(request: JoinFamilyRequestDto) = joinFamilyResponse
     override suspend fun leaveFamily(request: LeaveFamilyRequestDto) = leaveFamilyResponse
+    override suspend fun subscribeDeviceToken(
+        request: SubscribeDeviceTokenRequestDto,
+    ) = subscribeDeviceTokenResponse
+
+    override suspend fun unsubscribeDeviceToken() = unsubscribeDeviceTokenResponse
+    override suspend fun sendFamilyNotification(
+        request: SendFamilyNotificationRequestDto,
+    ) = sendFamilyNotificationResponse
+
+    override suspend fun sendGreetingNotification(
+        request: SendGreetingNotificationRequestDto,
+    ) = sendGreetingNotificationResponse
 
     private fun <T> stub(): Response<T> =
         Response.error(500, "stub not configured".toResponseBody("text/plain".toMediaType()))

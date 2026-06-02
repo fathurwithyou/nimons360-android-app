@@ -19,7 +19,7 @@ class MappersTest {
     @Test
     fun `toDomain maps all fields correctly`() {
         val dto = MemberPresenceUpdatedPayloadDto(
-            userId = "u1",
+            userId = 1,
             id = null,
             fullName = "Alice Smith",
             email = "alice@test.com",
@@ -30,10 +30,11 @@ class MappersTest {
             isCharging = true,
             internetStatus = "wifi",
             metadata = JsonObject(mapOf("key" to JsonPrimitive("value"))),
+            profileImageUrl = "https://example.com/alice.png",
         )
         val domain = dto.toDomain()
 
-        assertEquals("u1", domain.userId)
+        assertEquals("1", domain.userId)
         assertEquals("Alice Smith", domain.name)
         assertEquals("alice@test.com", domain.email)
         assertEquals(-6.891, domain.lat, 0.0001)
@@ -42,6 +43,7 @@ class MappersTest {
         assertEquals(92, domain.battery)
         assertTrue(domain.charging)
         assertEquals("wifi", domain.internetStatus)
+        assertEquals("https://example.com/alice.png", domain.profileImageUrl)
     }
 
     @Test
@@ -58,6 +60,7 @@ class MappersTest {
             isCharging = null,
             internetStatus = null,
             metadata = null,
+            profileImageUrl = null,
         )
         val domain = dto.toDomain()
         assertEquals("fallback-id", domain.userId)
@@ -69,7 +72,7 @@ class MappersTest {
             userId = null, id = null, fullName = null, email = null,
             latitude = null, longitude = null, rotation = null,
             batteryLevel = null, isCharging = null, internetStatus = null,
-            metadata = null,
+            metadata = null, profileImageUrl = null,
         )
         val domain = dto.toDomain()
         assertEquals("", domain.userId)
@@ -87,22 +90,31 @@ class MappersTest {
         val dto = ProfileDto(
             id = 42, fullName = "Charlie", email = "charlie@test.com",
             nim = null, createdAt = null, updatedAt = null,
+            profileImageUrl = "https://example.com/charlie.png",
         )
         val domain = dto.toDomain()
         assertEquals("42", domain.id)
         assertEquals("Charlie", domain.name)
         assertEquals("charlie@test.com", domain.email)
+        assertEquals("https://example.com/charlie.png", domain.profileImageUrl)
     }
 
     // FamilyMemberDto.toDomain()
 
     @Test
     fun `FamilyMemberDto toDomain maps correctly`() {
-        val dto = FamilyMemberDto(id = 7, fullName = "Diana", email = "diana@test.com", joinedAt = null)
+        val dto = FamilyMemberDto(
+            id = 7,
+            fullName = "Diana",
+            email = "diana@test.com",
+            joinedAt = null,
+            profileImageUrl = "https://example.com/diana.png",
+        )
         val domain = dto.toDomain()
         assertEquals("7", domain.id)
         assertEquals("Diana", domain.name)
         assertEquals("diana@test.com", domain.email)
+        assertEquals("https://example.com/diana.png", domain.profileImageUrl)
     }
 
     @Test

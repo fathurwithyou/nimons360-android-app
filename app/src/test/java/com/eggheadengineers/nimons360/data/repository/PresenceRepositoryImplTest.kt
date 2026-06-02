@@ -31,7 +31,7 @@ class PresenceRepositoryImplTest {
             {
                 "type": "member_presence_updated",
                 "payload": {
-                    "userId": "u1",
+                    "userId": 1,
                     "fullName": "Alice",
                     "email": "alice@test.com",
                     "latitude": -6.89,
@@ -39,7 +39,8 @@ class PresenceRepositoryImplTest {
                     "rotation": 45.0,
                     "batteryLevel": 85,
                     "isCharging": true,
-                    "internetStatus": "wifi"
+                    "internetStatus": "wifi",
+                    "profileImageUrl": "https://example.com/alice.png"
                 }
             }
         """.trimIndent()
@@ -52,7 +53,7 @@ class PresenceRepositoryImplTest {
         assertNotNull(payloadJson)
 
         val payload = json.decodeFromString<com.eggheadengineers.nimons360.data.dto.MemberPresenceUpdatedPayloadDto>(payloadJson)
-        assertEquals("u1", payload.userId)
+        assertEquals(1, payload.userId)
         assertEquals("Alice", payload.fullName)
         assertEquals(-6.89, payload.latitude!!, 0.001)
         assertEquals(107.61, payload.longitude!!, 0.001)
@@ -60,6 +61,7 @@ class PresenceRepositoryImplTest {
         assertEquals(85, payload.batteryLevel)
         assertTrue(payload.isCharging!!)
         assertEquals("wifi", payload.internetStatus)
+        assertEquals("https://example.com/alice.png", payload.profileImageUrl)
     }
 
     @Test
@@ -95,7 +97,7 @@ class PresenceRepositoryImplTest {
             {
                 "type": "member_presence_updated",
                 "payload": {
-                    "userId": "u3"
+                    "userId": 3
                 }
             }
         """.trimIndent()
@@ -105,7 +107,7 @@ class PresenceRepositoryImplTest {
         val payload = json.decodeFromString<com.eggheadengineers.nimons360.data.dto.MemberPresenceUpdatedPayloadDto>(payloadJson)
 
         val domain = payload.toDomain()
-        assertEquals("u3", domain.userId)
+        assertEquals("3", domain.userId)
         assertEquals("", domain.name)
         assertEquals("", domain.email)
         assertEquals(0.0, domain.lat, 0.001)
