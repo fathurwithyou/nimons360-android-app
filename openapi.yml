@@ -1,12 +1,21 @@
 openapi: 3.0.3
 info:
   title: Nimons360 API
-  description: REST API for the Nimons360 family tracking application
-  version: 1.0.0
+  description: REST API contract for the Nimons360 family tracking application. WebSocket is intentionally excluded.
+  version: 2.0.0
 
 servers:
   - url: https://mad.labpro.hmif.dev
-    description: Server
+    description: Production server
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Authentication
+  - name: User
+  - name: Families
+  - name: Notifications
 
 components:
   securitySchemes:
@@ -16,14 +25,6 @@ components:
       bearerFormat: JWT
 
   schemas:
-    ApiResponse:
-      type: object
-      properties:
-        status:
-          type: string
-        message:
-          type: string
-
     LoginRequest:
       type: object
       required: [email, password]
@@ -35,57 +36,68 @@ components:
           type: string
           format: password
 
-    LoginResponse:
-      allOf:
-        - $ref: '#/components/schemas/ApiResponse'
-        - type: object
-          properties:
-            data:
-              type: object
-              properties:
-                token:
-                  type: string
-                expiresAt:
-                  type: string
-                  format: date-time
-                user:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                    nim:
-                      type: string
-                    email:
-                      type: string
-                      format: email
-                    fullName:
-                      type: string
-
-    Profile:
+    User:
       type: object
       properties:
         id:
           type: integer
-        fullName:
+          example: 12
+        nim:
           type: string
+          nullable: true
+          example: "13522084"
         email:
           type: string
           format: email
+        fullName:
+          type: string
+        profileImageUrl:
+          type: string
+          nullable: true
+          example: https://mad.labpro.hmif.dev/uploads/13522084.png
 
-    ProfileResponse:
+    Profile:
       allOf:
-        - $ref: '#/components/schemas/ApiResponse'
+        - $ref: '#/components/schemas/User'
         - type: object
           properties:
-            data:
-              $ref: '#/components/schemas/Profile'
+            createdAt:
+              type: string
+              format: date-time
+              nullable: true
+            updatedAt:
+              type: string
+              format: date-time
+              nullable: true
+
+    LoginResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+              example: jwt
+            expiresAt:
+              type: string
+              format: date-time
+            user:
+              $ref: '#/components/schemas/User'
+
+    ProfileResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Profile'
 
     UpdateProfileRequest:
       type: object
-      required: [name]
+      required: [fullName]
       properties:
-        name:
+        fullName:
           type: string
+          minLength: 1
 
     FamilyMember:
       type: object
@@ -102,6 +114,10 @@ components:
           type: string
           format: date-time
           nullable: true
+        profileImageUrl:
+          type: string
+          nullable: true
+          example: https://mad.labpro.hmif.dev/uploads/13522084.png
 
     FamilySummary:
       type: object
@@ -119,6 +135,14 @@ components:
         familyCode:
           type: string
           nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
         members:
           type: array
           nullable: true
@@ -135,11 +159,19 @@ components:
         iconUrl:
           type: string
           format: uri
+        isMember:
+          type: boolean
+          nullable: true
         familyCode:
           type: string
           nullable: true
-        isMember:
-          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
           nullable: true
         members:
           type: array
@@ -148,22 +180,18 @@ components:
             $ref: '#/components/schemas/FamilyMember'
 
     FamilyListResponse:
-      allOf:
-        - $ref: '#/components/schemas/ApiResponse'
-        - type: object
-          properties:
-            data:
-              type: array
-              items:
-                $ref: '#/components/schemas/FamilySummary'
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FamilySummary'
 
     FamilyDetailResponse:
-      allOf:
-        - $ref: '#/components/schemas/ApiResponse'
-        - type: object
-          properties:
-            data:
-              $ref: '#/components/schemas/FamilyDetail'
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/FamilyDetail'
 
     CreateFamilyRequest:
       type: object
@@ -171,19 +199,19 @@ components:
       properties:
         name:
           type: string
+          minLength: 1
         iconUrl:
           type: string
           format: uri
-          description: |
-            Must be one of:
-            https://mad.labpro.hmif.dev/assets/family_icon_1.png
-            https://mad.labpro.hmif.dev/assets/family_icon_2.png
-            https://mad.labpro.hmif.dev/assets/family_icon_3.png
-            https://mad.labpro.hmif.dev/assets/family_icon_4.png
-            https://mad.labpro.hmif.dev/assets/family_icon_5.png
-            https://mad.labpro.hmif.dev/assets/family_icon_6.png
-            https://mad.labpro.hmif.dev/assets/family_icon_7.png
-            https://mad.labpro.hmif.dev/assets/family_icon_8.png
+          enum:
+            - https://mad.labpro.hmif.dev/assets/family_icon_1.png
+            - https://mad.labpro.hmif.dev/assets/family_icon_2.png
+            - https://mad.labpro.hmif.dev/assets/family_icon_3.png
+            - https://mad.labpro.hmif.dev/assets/family_icon_4.png
+            - https://mad.labpro.hmif.dev/assets/family_icon_5.png
+            - https://mad.labpro.hmif.dev/assets/family_icon_6.png
+            - https://mad.labpro.hmif.dev/assets/family_icon_7.png
+            - https://mad.labpro.hmif.dev/assets/family_icon_8.png
 
     JoinFamilyRequest:
       type: object
@@ -196,6 +224,15 @@ components:
           minLength: 6
           maxLength: 6
 
+    JoinFamilyResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            joined:
+              type: boolean
+
     LeaveFamilyRequest:
       type: object
       required: [familyId]
@@ -203,15 +240,86 @@ components:
         familyId:
           type: integer
 
-security:
-  - BearerAuth: []
+    LeaveFamilyResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            left:
+              type: boolean
+
+    SubscribeDeviceTokenRequest:
+      type: object
+      required: [fcmToken]
+      properties:
+        fcmToken:
+          type: string
+
+    SubscribeDeviceTokenResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            subscribed:
+              type: boolean
+
+    UnsubscribeDeviceTokenResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            unsubscribed:
+              type: boolean
+
+    SendFamilyNotificationRequest:
+      type: object
+      required: [familyId, message]
+      properties:
+        familyId:
+          type: integer
+        message:
+          type: string
+          minLength: 1
+
+    SendFamilyNotificationResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            sent:
+              type: boolean
+
+    SendGreetingNotificationRequest:
+      type: object
+      required: [familyId, targetUserId, message]
+      properties:
+        familyId:
+          type: integer
+        targetUserId:
+          type: integer
+        message:
+          type: string
+          minLength: 1
+
+    SendGreetingNotificationResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            delivered:
+              type: boolean
 
 paths:
   /api/login:
     post:
+      tags: [Authentication]
       summary: Login with email and password
       security: []
-      tags: [Authentication]
       requestBody:
         required: true
         content:
@@ -227,16 +335,14 @@ paths:
                 $ref: '#/components/schemas/LoginResponse'
         '401':
           description: Invalid credentials
-        '401':
-          description: Unauthorized
 
   /api/me:
     get:
-      summary: Get current user profile
       tags: [User]
+      summary: Get current user profile
       responses:
         '200':
-          description: User profile
+          description: Current user profile
           content:
             application/json:
               schema:
@@ -244,8 +350,8 @@ paths:
         '401':
           description: Unauthorized
     patch:
-      summary: Update current user profile
       tags: [User]
+      summary: Update current user's full name
       requestBody:
         required: true
         content:
@@ -262,27 +368,41 @@ paths:
         '401':
           description: Unauthorized
 
-  /api/me/families:
-    get:
-      summary: Get families the current user has joined
-      tags: [Families]
+  /api/me/photo:
+    post:
+      tags: [User]
+      summary: Upload or replace current user's profile photo
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [photo]
+              properties:
+                photo:
+                  type: string
+                  format: binary
+                  description: PNG or JPEG image, maximum 500 KB.
       responses:
         '200':
-          description: List of user's families
+          description: Updated profile with profileImageUrl
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FamilyListResponse'
+                $ref: '#/components/schemas/ProfileResponse'
         '401':
           description: Unauthorized
+        '413':
+          description: Image is too large
 
-  /api/families/discover:
+  /api/me/families:
     get:
-      summary: Get 5 random families to discover
       tags: [Families]
+      summary: Get families joined by current user
       responses:
         '200':
-          description: List of discoverable families
+          description: User family list
           content:
             application/json:
               schema:
@@ -292,11 +412,11 @@ paths:
 
   /api/families:
     get:
-      summary: Get all families
       tags: [Families]
+      summary: Get all families
       responses:
         '200':
-          description: List of all families
+          description: All families
           content:
             application/json:
               schema:
@@ -304,8 +424,8 @@ paths:
         '401':
           description: Unauthorized
     post:
-      summary: Create a new family
       tags: [Families]
+      summary: Create a new family
       requestBody:
         required: true
         content:
@@ -313,8 +433,8 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateFamilyRequest'
       responses:
-        '201':
-          description: Family created. Creator automatically joins.
+        '200':
+          description: Created family detail
           content:
             application/json:
               schema:
@@ -322,16 +442,30 @@ paths:
         '401':
           description: Unauthorized
 
+  /api/families/discover:
+    get:
+      tags: [Families]
+      summary: Get 5 random discoverable families
+      responses:
+        '200':
+          description: Discoverable families
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FamilyListResponse'
+        '401':
+          description: Unauthorized
+
   /api/families/{familyId}:
     get:
-      summary: Get family detail by ID
       tags: [Families]
+      summary: Get family detail by ID
       parameters:
         - name: familyId
           in: path
           required: true
           schema:
-            type: string
+            type: integer
       responses:
         '200':
           description: Family detail
@@ -339,15 +473,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FamilyDetailResponse'
-        '404':
-          description: Family not found
         '401':
           description: Unauthorized
+        '404':
+          description: Family not found
 
   /api/families/join:
     post:
-      summary: Join a family using a code
       tags: [Families]
+      summary: Join a family with family ID and code
       requestBody:
         required: true
         content:
@@ -356,20 +490,18 @@ paths:
               $ref: '#/components/schemas/JoinFamilyRequest'
       responses:
         '200':
-          description: Successfully joined
+          description: Joined family
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          description: Invalid code
+                $ref: '#/components/schemas/JoinFamilyResponse'
         '401':
           description: Unauthorized
 
   /api/families/leave:
     post:
-      summary: Leave a family
       tags: [Families]
+      summary: Leave a family
       requestBody:
         required: true
         content:
@@ -378,10 +510,84 @@ paths:
               $ref: '#/components/schemas/LeaveFamilyRequest'
       responses:
         '200':
-          description: Successfully left
+          description: Left family
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/LeaveFamilyResponse'
+        '401':
+          description: Unauthorized
+
+  /api/notifications/subscribe:
+    post:
+      tags: [Notifications]
+      summary: Subscribe current device FCM token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscribeDeviceTokenRequest'
+      responses:
+        '200':
+          description: Token subscribed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscribeDeviceTokenResponse'
+        '401':
+          description: Unauthorized
+
+  /api/notifications/unsubscribe:
+    post:
+      tags: [Notifications]
+      summary: Unsubscribe current user's device token
+      responses:
+        '200':
+          description: Token unsubscribed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnsubscribeDeviceTokenResponse'
+        '401':
+          description: Unauthorized
+
+  /api/notifications/send:
+    post:
+      tags: [Notifications]
+      summary: Send broadcast notification to a family
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendFamilyNotificationRequest'
+      responses:
+        '200':
+          description: Notification sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendFamilyNotificationResponse'
+        '401':
+          description: Unauthorized
+
+  /api/notifications/greeting:
+    post:
+      tags: [Notifications]
+      summary: Send greeting notification to a family member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendGreetingNotificationRequest'
+      responses:
+        '200':
+          description: Greeting delivered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendGreetingNotificationResponse'
         '401':
           description: Unauthorized

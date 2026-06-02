@@ -79,6 +79,57 @@ cd ms1-k02-ege
 ./gradlew test
 ```
 
+## OWASP Mobile Security
+
+Analisis dilakukan dengan asumsi server tidak sepenuhnya aman, sehingga validasi dan konfigurasi aman tetap diterapkan di sisi client.
+
+### M4: Insufficient Input/Output Validation
+
+Risiko:
+
+- Input nama profil, pesan notifikasi, kode family, dan marked location dapat kosong atau tidak sesuai format.
+- Upload foto profil dan foto marked location berisiko menerima file selain gambar atau ukuran terlalu besar.
+
+Perbaikan:
+
+- Form join family membatasi kode menjadi 6 karakter.
+- Form pesan notifikasi dan greeting tidak dapat dikirim jika pesan kosong.
+- Upload foto profil dan foto marked location hanya menerima `image/png` atau `image/jpeg`.
+- Ukuran foto dibatasi maksimal 500 KB sebelum dikirim ke API atau disimpan lokal.
+- Response API dipetakan melalui DTO/domain model dan `ignoreUnknownKeys`, sehingga field tambahan dari server tidak langsung merusak UI.
+
+### M8: Security Misconfiguration
+
+Risiko:
+
+- Cleartext traffic global sebelumnya aktif.
+- Logging HTTP body dapat mengekspos token, data profil, pesan, dan payload multipart.
+
+Perbaikan:
+
+- `android:usesCleartextTraffic` diset `false`.
+- `network_security_config.xml` memblokir cleartext secara default.
+- Pengecualian cleartext hanya diberikan untuk `10.0.2.2` agar coordinator livestream lokal tetap bisa dipakai saat pengembangan.
+- Logging OkHttp API utama diturunkan dari `BODY` menjadi `BASIC`, sehingga request/response body sensitif tidak dicetak.
+
+### M9: Insecure Data Storage
+
+Risiko:
+
+- Auth token masih disimpan di DataStore preferences biasa.
+- Foto marked location disimpan di filesystem lokal aplikasi.
+
+Perbaikan saat ini:
+
+- Foto marked location disimpan di internal app files directory, bukan public external storage.
+- Metadata marked location disimpan di Room/SQLite.
+- Saat marked location dihapus, semua path foto terkait dihapus dari filesystem melalui repository.
+- Preferensi notifikasi dan location sharing disimpan lokal memakai SharedPreferences sesuai spesifikasi.
+
+Sisa risiko:
+
+- Auth token belum memakai encrypted storage. Perbaikan lanjutan yang direkomendasikan adalah migrasi token dari DataStore biasa ke penyimpanan terenkripsi berbasis Android Keystore.
+
 ## Screenshot
 
 Simpan screenshot aplikasi di folder `screenshot/`.

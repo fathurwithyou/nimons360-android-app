@@ -10,7 +10,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.eggheadengineers.nimons360"
+        applicationId = "com.labpro.mad"
         minSdk = 30
         targetSdk = 35
         versionCode = 1
