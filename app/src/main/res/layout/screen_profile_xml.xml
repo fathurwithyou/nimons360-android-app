@@ -56,15 +56,42 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/profileAvatar"
+                <FrameLayout
                     android:layout_width="@dimen/profile_avatar_size"
-                    android:layout_height="@dimen/profile_avatar_size"
-                    android:background="@drawable/bg_xml_surface_muted_round"
-                    android:fontFamily="@font/geist_medium"
-                    android:gravity="center"
-                    android:textColor="@color/xml_text_primary"
-                    android:textSize="20sp" />
+                    android:layout_height="@dimen/profile_avatar_size">
+
+                    <ImageView
+                        android:id="@+id/profileAvatarImage"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/bg_xml_avatar_circle"
+                        android:clipToOutline="true"
+                        android:contentDescription="Profile photo"
+                        android:outlineProvider="background"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/profileAvatar"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/bg_xml_avatar_circle"
+                        android:fontFamily="@font/geist_medium"
+                        android:gravity="center"
+                        android:textColor="@color/xml_text_primary"
+                        android:textSize="20sp" />
+
+                    <ImageButton
+                        android:id="@+id/profilePhotoEditButton"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_gravity="bottom|end"
+                        android:background="@drawable/bg_xml_edit_button_circle_selector"
+                        android:contentDescription="Edit profile photo"
+                        android:padding="7dp"
+                        android:src="@drawable/ic_xml_edit"
+                        android:tint="@android:color/white" />
+                </FrameLayout>
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -169,6 +196,99 @@
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:layout_marginTop="@dimen/space_3"
+                android:background="@color/xml_border" />
+
+            <TextView
+                style="@style/Widget.Nimons.Xml.TitleLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_5"
+                android:text="Preferences" />
+
+            <TextView
+                style="@style/Widget.Nimons.Xml.BodyMuted"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_1"
+                android:text="Control device notifications and live location privacy." />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_4"
+                android:gravity="center_vertical"
+                android:minHeight="56dp"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/Widget.Nimons.Xml.BodyLarge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Notifications"
+                        android:textColor="@color/xml_text_primary" />
+
+                    <TextView
+                        style="@style/Widget.Nimons.Xml.BodySmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Receive family push notifications." />
+                </LinearLayout>
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/profileNotificationsSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/xml_border" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:minHeight="56dp"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/Widget.Nimons.Xml.BodyLarge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Share location"
+                        android:textColor="@color/xml_text_primary" />
+
+                    <TextView
+                        style="@style/Widget.Nimons.Xml.BodySmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Send your live location to family members." />
+                </LinearLayout>
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/profileLocationSharingSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
                 android:background="@color/xml_border" />
 
             <TextView
