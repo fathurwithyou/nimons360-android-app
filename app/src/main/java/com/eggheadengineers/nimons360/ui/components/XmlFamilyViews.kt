@@ -3,12 +3,34 @@ package com.eggheadengineers.nimons360.ui.components
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.LinearLayout
+import android.widget.ImageView
+import android.widget.TextView
 import androidx.core.view.isVisible
 import com.eggheadengineers.nimons360.R
 import com.eggheadengineers.nimons360.databinding.ItemFamilyRowBinding
 import com.eggheadengineers.nimons360.domain.model.Family
+import com.eggheadengineers.nimons360.domain.model.FamilyMember
 
 private fun Family.displayMemberCount(): Int? = memberCount ?: members.takeIf { it.isNotEmpty() }?.size
+
+private fun resolveUserImageUrl(value: String): String =
+    if (value.startsWith("http://") || value.startsWith("https://")) {
+        value
+    } else {
+        "https://mad.labpro.hmif.dev/${value.removePrefix("/")}"
+    }
+
+private fun bindMemberAvatar(member: FamilyMember?, initialView: TextView, imageView: ImageView) {
+    val imageUrl = member?.profileImageUrl?.takeIf { it.isNotBlank() }?.let(::resolveUserImageUrl)
+    initialView.isVisible = member != null && imageUrl == null
+    imageView.isVisible = member != null && imageUrl != null
+    initialView.text = member?.name?.firstOrNull()?.uppercaseChar()?.toString().orEmpty()
+    if (imageUrl != null) {
+        imageView.loadUrl(imageUrl, placeholderResId = R.drawable.bg_xml_avatar_circle)
+    } else {
+        imageView.setImageDrawable(null)
+    }
+}
 
 fun renderFamilyRows(
     inflater: LayoutInflater,
@@ -31,14 +53,13 @@ fun renderFamilyRows(
 
         val visibleMembers = family.members.take(3)
         val avatarViews = listOf(
-            binding.familyAvatarOne,
-            binding.familyAvatarTwo,
-            binding.familyAvatarThree,
+            binding.familyAvatarOne to binding.familyAvatarOneImage,
+            binding.familyAvatarTwo to binding.familyAvatarTwoImage,
+            binding.familyAvatarThree to binding.familyAvatarThreeImage,
         )
-        avatarViews.forEachIndexed { avatarIndex, textView ->
+        avatarViews.forEachIndexed { avatarIndex, (textView, imageView) ->
             val member = visibleMembers.getOrNull(avatarIndex)
-            textView.isVisible = member != null
-            textView.text = member?.name?.firstOrNull()?.uppercaseChar()?.toString().orEmpty()
+            bindMemberAvatar(member, textView, imageView)
         }
         binding.familyAvatarGroup.isVisible = visibleMembers.isNotEmpty()
         val overflow = family.members.size - visibleMembers.size

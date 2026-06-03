@@ -61,40 +61,82 @@
             android:orientation="horizontal"
             android:visibility="gone">
 
-            <TextView
-                android:id="@+id/familyAvatarOne"
+            <FrameLayout
                 android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:background="@drawable/bg_xml_avatar_circle"
-                android:fontFamily="@font/geist_medium"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:textColor="@color/xml_text_primary"
-                android:textSize="10sp" />
+                android:layout_height="20dp">
 
-            <TextView
-                android:id="@+id/familyAvatarTwo"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_marginStart="4dp"
-                android:background="@drawable/bg_xml_avatar_circle"
-                android:fontFamily="@font/geist_medium"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:textColor="@color/xml_text_primary"
-                android:textSize="10sp" />
+                <ImageView
+                    android:id="@+id/familyAvatarOneImage"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:background="@drawable/bg_xml_avatar_circle"
+                    android:clipToOutline="true"
+                    android:scaleType="centerCrop"
+                    android:visibility="gone" />
 
-            <TextView
-                android:id="@+id/familyAvatarThree"
+                <TextView
+                    android:id="@+id/familyAvatarOne"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:background="@drawable/bg_xml_avatar_circle"
+                    android:fontFamily="@font/geist_medium"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/xml_text_primary"
+                    android:textSize="10sp" />
+            </FrameLayout>
+
+            <FrameLayout
                 android:layout_width="20dp"
                 android:layout_height="20dp"
-                android:layout_marginStart="4dp"
-                android:background="@drawable/bg_xml_avatar_circle"
-                android:fontFamily="@font/geist_medium"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:textColor="@color/xml_text_primary"
-                android:textSize="10sp" />
+                android:layout_marginStart="4dp">
+
+                <ImageView
+                    android:id="@+id/familyAvatarTwoImage"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:background="@drawable/bg_xml_avatar_circle"
+                    android:clipToOutline="true"
+                    android:scaleType="centerCrop"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/familyAvatarTwo"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:background="@drawable/bg_xml_avatar_circle"
+                    android:fontFamily="@font/geist_medium"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/xml_text_primary"
+                    android:textSize="10sp" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginStart="4dp">
+
+                <ImageView
+                    android:id="@+id/familyAvatarThreeImage"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:background="@drawable/bg_xml_avatar_circle"
+                    android:clipToOutline="true"
+                    android:scaleType="centerCrop"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/familyAvatarThree"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:background="@drawable/bg_xml_avatar_circle"
+                    android:fontFamily="@font/geist_medium"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/xml_text_primary"
+                    android:textSize="10sp" />
+            </FrameLayout>
 
             <TextView
                 android:id="@+id/familyAvatarOverflow"
