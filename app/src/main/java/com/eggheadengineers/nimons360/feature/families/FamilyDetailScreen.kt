@@ -51,6 +51,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -126,11 +127,11 @@ fun FamilyDetailScreen(
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
-    var showJoinDialog by remember { mutableStateOf(false) }
-    var joinDialogInitialCode by remember { mutableStateOf("") }
-    var consumedInitialJoinCode by remember { mutableStateOf(false) }
-    var showLeaveDialog by remember { mutableStateOf(false) }
-    var showNotificationSheet by remember { mutableStateOf(false) }
+    var showJoinDialog by rememberSaveable { mutableStateOf(false) }
+    var joinDialogInitialCode by rememberSaveable { mutableStateOf("") }
+    var consumedInitialJoinCode by rememberSaveable { mutableStateOf(false) }
+    var showLeaveDialog by rememberSaveable { mutableStateOf(false) }
+    var showNotificationSheet by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(state.feedback) {
         state.feedback?.let {
@@ -349,8 +350,8 @@ private fun FamilyDetailContent(
     onShareClick: () -> Unit,
     onCopyCode: (String) -> Unit,
 ) {
-    var showAllMembers by remember { mutableStateOf(false) }
-    var memberQuery by remember { mutableStateOf("") }
+    var showAllMembers by rememberSaveable { mutableStateOf(false) }
+    var memberQuery by rememberSaveable { mutableStateOf("") }
     val filteredMembers = detail.members.filter { member ->
         memberQuery.isBlank() ||
             member.name.contains(memberQuery, ignoreCase = true) ||
@@ -696,7 +697,7 @@ private fun JoinFamilyDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
-    var code by remember(initialCode) { mutableStateOf(initialCode.uppercase().take(6)) }
+    var code by rememberSaveable(initialCode) { mutableStateOf(initialCode.uppercase().take(6)) }
 
     FamilyActionDialog(
         title = "Join family",
@@ -738,9 +739,9 @@ private fun FamilyNotificationBottomSheet(
 ) {
     val sheetState = rememberModalBottomSheetState()
     val greetingMembers = detail.members.filter { it.id.isNotBlank() }
-    var message by remember { mutableStateOf("") }
+    var message by rememberSaveable { mutableStateOf("") }
     var selectedMemberId by remember(greetingMembers) { mutableStateOf(greetingMembers.firstOrNull()?.id.orEmpty()) }
-    var greeting by remember { mutableStateOf(defaultGreetingMessage()) }
+    var greeting by rememberSaveable { mutableStateOf(defaultGreetingMessage()) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
