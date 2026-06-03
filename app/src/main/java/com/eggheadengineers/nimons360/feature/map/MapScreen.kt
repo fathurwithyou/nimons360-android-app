@@ -11,6 +11,7 @@ import android.graphics.Path
 import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.view.MotionEvent
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
@@ -57,6 +58,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
@@ -125,8 +127,8 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    var searchQuery by remember { mutableStateOf("") }
-    var currentUserName by remember { mutableStateOf("You") }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var currentUserName by rememberSaveable { mutableStateOf("You") }
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
     var selectedFavorite by remember { mutableStateOf<FavoriteLocation?>(null) }
     var selectedFavoriteSnapshot by remember { mutableStateOf<FavoriteLocation?>(null) }
@@ -136,6 +138,13 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
     var editPhotos by remember { mutableStateOf<List<ImagePayload>>(emptyList()) }
     var photoTarget by remember { mutableStateOf(MapPhotoTarget.Add) }
     var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
+
+    LaunchedEffect(state.message) {
+        state.message?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearMessage()
+        }
+    }
 
     fun appendPhoto(uri: Uri?) {
         if (uri == null) return
@@ -1018,8 +1027,8 @@ private fun AddFavoritePanel(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var name by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
+    var name by rememberSaveable { mutableStateOf("") }
+    var description by rememberSaveable { mutableStateOf("") }
 
     Surface(
         modifier = modifier,
@@ -1186,8 +1195,8 @@ private fun EditFavoritePanel(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var name by remember(favorite.id) { mutableStateOf(favorite.name) }
-    var description by remember(favorite.id) { mutableStateOf(favorite.description) }
+    var name by rememberSaveable(favorite.id) { mutableStateOf(favorite.name) }
+    var description by rememberSaveable(favorite.id) { mutableStateOf(favorite.description) }
 
     Surface(
         modifier = modifier,

@@ -8,8 +8,10 @@ import com.eggheadengineers.nimons360.core.battery.BatteryState
 import com.eggheadengineers.nimons360.core.location.LocationTracker
 import com.eggheadengineers.nimons360.core.network.ConnectivityObserver
 import com.eggheadengineers.nimons360.core.network.NetworkStatus
+import com.eggheadengineers.nimons360.core.presence.PresenceLocationService
 import com.eggheadengineers.nimons360.core.preferences.UserPreferenceStore
 import com.eggheadengineers.nimons360.core.sensor.OrientationProvider
+import com.eggheadengineers.nimons360.core.validation.validateMarkedLocation
 import com.eggheadengineers.nimons360.domain.model.Family
 import com.eggheadengineers.nimons360.domain.model.FavoriteLocation
 import com.eggheadengineers.nimons360.domain.model.FavoriteLocationPhotoInput
@@ -36,6 +38,7 @@ data class MapUiState(
     val favoriteLocations: List<FavoriteLocation> = emptyList(),
     val pendingFavoriteLat: Double? = null,
     val pendingFavoriteLng: Double? = null,
+    val message: String? = null,
 ) {
     val selectedMember: MemberPresence? 
         get() = selectedMemberId?.let { members[it] }
@@ -69,7 +72,6 @@ class MapViewModel(
     private val _uiState = MutableStateFlow(MapUiState())
     val uiState: StateFlow<MapUiState> = _uiState
 
-    private var presenceJob: Job? = null
     private var staleCleanupJob: Job? = null
     private var loadFamiliesJob: Job? = null
     private var trackingStarted = false
@@ -142,6 +144,9 @@ class MapViewModel(
 
     fun onPermissionGranted() {
         _uiState.update { it.copy(hasLocationPermission = true) }
+        if (userPreferenceStore.isLocationSharingEnabled()) {
+            PresenceLocationService.start(locationTracker.context)
+        }
         if (!trackingStarted) {
             trackingStarted = true
             startTracking()
@@ -205,27 +210,6 @@ class MapViewModel(
             }
         }
 
-        presenceJob = viewModelScope.launch {
-            while (true) {
-                delay(1_000)
-                val s = _uiState.value
-                if (s.myLat == 0.0 && s.myLng == 0.0) continue
-                if (!userPreferenceStore.isLocationSharingEnabled()) continue
-                val internetStatus = when (s.networkStatus) {
-                    NetworkStatus.WIFI -> "wifi"
-                    NetworkStatus.MOBILE -> "mobile"
-                    NetworkStatus.OFFLINE -> "offline"
-                }
-                presenceRepository.sendPresence(
-                    lat = s.myLat,
-                    lng = s.myLng,
-                    rotation = s.myRotation,
-                    battery = s.battery.level,
-                    charging = s.battery.charging,
-                    internetStatus = internetStatus,
-                )
-            }
-        }
     }
 
     fun requestAddFavorite(lat: Double, lng: Double) {
@@ -237,6 +221,11 @@ class MapViewModel(
         description: String,
         photos: List<FavoriteLocationPhotoInput> = emptyList(),
     ) {
+        val validationError = validateMarkedLocation(name, description)
+        if (validationError != null) {
+            _uiState.update { it.copy(message = validationError) }
+            return
+        }
         val state = _uiState.value
         val lat = state.pendingFavoriteLat ?: return
         val lng = state.pendingFavoriteLng ?: return
@@ -262,9 +251,18 @@ class MapViewModel(
         description: String,
         photosToAdd: List<FavoriteLocationPhotoInput> = emptyList(),
     ) {
+        val validationError = validateMarkedLocation(name, description)
+        if (validationError != null) {
+            _uiState.update { it.copy(message = validationError) }
+            return
+        }
         viewModelScope.launch {
             favoriteLocationRepository.update(id, name, description, photosToAdd)
         }
+    }
+
+    fun clearMessage() {
+        _uiState.update { it.copy(message = null) }
     }
 
     fun selectMember(member: MemberPresence?) {
@@ -274,7 +272,6 @@ class MapViewModel(
     override fun onCleared() {
         super.onCleared()
         presenceRepository.disconnect()
-        presenceJob?.cancel()
         staleCleanupJob?.cancel()
     }
 
