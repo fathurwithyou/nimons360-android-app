@@ -6,4 +6,10 @@
     <cache-path
         name="marked_location_photo_cache"
         path="marked_location_photos/" />
+    <cache-path
+        name="share_cache"
+        path="shares/" />
+    <files-path
+        name="custom_pins"
+        path="custom_pins/" />
 </paths>

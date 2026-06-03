@@ -44,6 +44,10 @@
             android:foregroundServiceType="location" />
 
         <service
+            android:name=".core.pin.CustomPinDownloadService"
+            android:exported="false" />
+
+        <service
             android:name=".core.notifications.NimonsFirebaseMessagingService"
             android:exported="false">
             <intent-filter>
