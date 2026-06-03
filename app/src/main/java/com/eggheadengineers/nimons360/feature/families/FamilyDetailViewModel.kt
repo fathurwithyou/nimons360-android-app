@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import com.eggheadengineers.nimons360.core.validation.validateJoinCode
+import com.eggheadengineers.nimons360.core.validation.validateNotificationMessage
 import com.eggheadengineers.nimons360.data.network.userFriendlyMessage
 import com.eggheadengineers.nimons360.domain.model.FamilyDetail
 import com.eggheadengineers.nimons360.domain.model.LiveStream
@@ -67,6 +69,17 @@ class FamilyDetailViewModel(
     }
 
     fun joinFamily(code: String) {
+        val validationError = validateJoinCode(code)
+        if (validationError != null) {
+            showFeedback(
+                FamilyDetailFeedback(
+                    title = "Couldn't join family",
+                    message = validationError,
+                    isSuccess = false,
+                )
+            )
+            return
+        }
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             familyRepository.joinFamily(familyId, code).fold(
@@ -122,11 +135,12 @@ class FamilyDetailViewModel(
 
     fun sendFamilyNotification(message: String) {
         val trimmed = message.trim()
-        if (trimmed.isBlank()) {
+        val validationError = validateNotificationMessage(trimmed)
+        if (validationError != null) {
             showFeedback(
                 FamilyDetailFeedback(
-                    title = "Message is empty",
-                    message = "Write a short message before sending.",
+                    title = "Message needs attention",
+                    message = validationError,
                     isSuccess = false,
                 )
             )
@@ -162,11 +176,12 @@ class FamilyDetailViewModel(
 
     fun sendGreeting(targetUserId: String, message: String) {
         val trimmed = message.trim()
-        if (targetUserId.isBlank() || trimmed.isBlank()) {
+        val validationError = validateNotificationMessage(trimmed)
+        if (targetUserId.isBlank() || validationError != null) {
             showFeedback(
                 FamilyDetailFeedback(
                     title = "Greeting is incomplete",
-                    message = "Choose a target member and message first.",
+                    message = validationError ?: "Choose a target member first.",
                     isSuccess = false,
                 )
             )

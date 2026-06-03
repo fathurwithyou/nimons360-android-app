@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import com.eggheadengineers.nimons360.core.validation.validateFamilyName
 import com.eggheadengineers.nimons360.data.network.userFriendlyMessage
 import com.eggheadengineers.nimons360.domain.model.FamilyDetail
 import com.eggheadengineers.nimons360.domain.repository.FamilyRepository
@@ -22,8 +23,9 @@ class CreateFamilyViewModel(private val familyRepository: FamilyRepository) : Vi
     val uiState: StateFlow<CreateFamilyUiState> = _uiState
 
     fun createFamily(name: String, iconUrl: String) {
-        if (name.isBlank()) {
-            _uiState.value = CreateFamilyUiState.Error("Enter family name")
+        val nameError = validateFamilyName(name)
+        if (nameError != null) {
+            _uiState.value = CreateFamilyUiState.Error(nameError)
             return
         }
         if (iconUrl.isBlank()) {

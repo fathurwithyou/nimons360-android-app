@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import com.eggheadengineers.nimons360.core.validation.validateEmail
+import com.eggheadengineers.nimons360.core.validation.validatePassword
 import com.eggheadengineers.nimons360.domain.repository.AuthRepository
 import com.eggheadengineers.nimons360.data.network.userFriendlyMessage
 
@@ -21,12 +23,9 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
     val uiState: StateFlow<LoginUiState> = _uiState
 
     fun login(email: String, password: String) {
-        if (email.isBlank()) {
-            _uiState.value = LoginUiState.Error("Enter your email")
-            return
-        }
-        if (password.isBlank()) {
-            _uiState.value = LoginUiState.Error("Enter your password")
+        val validationError = validateEmail(email) ?: validatePassword(password)
+        if (validationError != null) {
+            _uiState.value = LoginUiState.Error(validationError)
             return
         }
 
