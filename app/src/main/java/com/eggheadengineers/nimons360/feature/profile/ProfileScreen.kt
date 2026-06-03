@@ -66,6 +66,8 @@ fun ProfileScreen(
     viewModel: ProfileViewModel,
     onSignedOut: () -> Unit,
     onBack: () -> Unit,
+    onAnalyticsClick: () -> Unit,
+    onCustomizePinClick: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -142,6 +144,12 @@ fun ProfileScreen(
                 binding.profilePhotoEditButton.applyBoundedRipple(cornerRadiusDp = 15f, darkSurface = true)
                 binding.profilePhotoEditButton.applyElasticPress()
                 binding.profilePhotoEditButton.setOnClickListener { showPhotoSheet = true }
+                binding.profileAnalyticsButton.applyBoundedRipple(cornerRadiusDp = 12f)
+                binding.profileAnalyticsButton.applyElasticPress()
+                binding.profileAnalyticsButton.setOnClickListener { onAnalyticsClick() }
+                binding.profileCustomizePinButton.applyBoundedRipple(cornerRadiusDp = 12f)
+                binding.profileCustomizePinButton.applyElasticPress()
+                binding.profileCustomizePinButton.setOnClickListener { onCustomizePinClick() }
                 binding.profileSignOutButton.applyBoundedRipple(cornerRadiusDp = 12f, darkSurface = true)
                 binding.profileSignOutButton.applyElasticPress()
                 binding.profileSignOutButton.setOnClickListener { viewModel.signOut() }

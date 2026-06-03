@@ -10,6 +10,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.eggheadengineers.nimons360.NimonsApplication
+import com.eggheadengineers.nimons360.feature.analytics.AnalyticsScreen
+import com.eggheadengineers.nimons360.feature.analytics.AnalyticsViewModel
 import com.eggheadengineers.nimons360.feature.auth.LoginScreen
 import com.eggheadengineers.nimons360.feature.auth.LoginViewModel
 import com.eggheadengineers.nimons360.feature.families.*
@@ -21,6 +23,7 @@ import com.eggheadengineers.nimons360.feature.livestream.ViewerScreen
 import com.eggheadengineers.nimons360.feature.livestream.ViewerViewModel
 import com.eggheadengineers.nimons360.feature.map.MapScreen
 import com.eggheadengineers.nimons360.feature.map.MapViewModel
+import com.eggheadengineers.nimons360.feature.pin.CustomizePinScreen
 import com.eggheadengineers.nimons360.feature.profile.ProfileScreen
 import com.eggheadengineers.nimons360.feature.profile.ProfileViewModel
 
@@ -31,6 +34,8 @@ sealed class Screen(val route: String) {
     data object Families : Screen("families")
     data object CreateFamily : Screen("create_family")
     data object Profile : Screen("profile")
+    data object Analytics : Screen("analytics")
+    data object CustomizePin : Screen("customize_pin")
     data object FamilyDetail : Screen("family_detail/{familyId}?code={familyCode}") {
         fun createRoute(familyId: String, familyCode: String? = null): String =
             if (familyCode.isNullOrBlank()) {
@@ -136,6 +141,24 @@ fun NimonsNavGraph(
                         popUpTo(0) { inclusive = true }
                     }
                 },
+                onBack = { navController.popBackStack() },
+                onAnalyticsClick = { navController.navigate(Screen.Analytics.route) },
+                onCustomizePinClick = { navController.navigate(Screen.CustomizePin.route) },
+            )
+        }
+
+        composable(Screen.Analytics.route) {
+            val vm: AnalyticsViewModel = viewModel(
+                factory = AnalyticsViewModel.Factory(app.favoriteLocationRepository),
+            )
+            AnalyticsScreen(
+                viewModel = vm,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Screen.CustomizePin.route) {
+            CustomizePinScreen(
                 onBack = { navController.popBackStack() },
             )
         }
