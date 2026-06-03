@@ -18,6 +18,8 @@ osmdroid = "6.1.20"
 coil = "2.7.0"
 media3 = "1.4.1"
 rootencoder = "2.7.2"
+firebaseBom = "34.4.0"
+playServicesCoroutines = "1.10.2"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
@@ -83,6 +85,11 @@ media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "medi
 
 # RootEncoder (RTMP broadcaster)
 rootencoder-library = { group = "com.github.pedroSG94.RootEncoder", name = "library", version.ref = "rootencoder" }
+
+# Firebase
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
+kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "playServicesCoroutines" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }
