@@ -125,6 +125,8 @@ fun NimonsNavGraph(
                     app.authRepository,
                     app.profileRepository,
                     app.userPreferenceStore,
+                    app.notificationTokenSync,
+                    app,
                 )
             )
             ProfileScreen(

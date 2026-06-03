@@ -1,8 +1,12 @@
 package com.eggheadengineers.nimons360
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -37,6 +41,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.content.ContextCompat
 import com.eggheadengineers.nimons360.core.network.NetworkStatus
 import com.eggheadengineers.nimons360.core.network.UnauthorizedEvent
 import com.eggheadengineers.nimons360.navigation.NimonsNavGraph
@@ -70,6 +75,9 @@ private data class FamilyDeepLinkTarget(
 
 class MainActivity : ComponentActivity() {
     private val pendingFamilyDeepLink = mutableStateOf<FamilyDeepLinkTarget?>(null)
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -78,6 +86,7 @@ class MainActivity : ComponentActivity() {
         pendingFamilyDeepLink.value = intent.extractFamilyDeepLinkId()
         val app = application as NimonsApplication
         val isLoggedIn = runBlocking { app.sessionManager.isLoggedIn() }
+        requestNotificationPermissionIfNeeded()
         val startDestination = if (isLoggedIn) Screen.Home.route else Screen.Login.route
         setContent {
             Nimons360Theme {
@@ -95,6 +104,17 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         pendingFamilyDeepLink.value = intent.extractFamilyDeepLinkId()
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val granted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.POST_NOTIFICATIONS,
+        ) == PackageManager.PERMISSION_GRANTED
+        if (!granted) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 }
 
@@ -150,6 +170,12 @@ private fun NimonsApp(
             navController.navigate(Screen.Login.route) {
                 popUpTo(0) { inclusive = true }
             }
+        }
+    }
+
+    LaunchedEffect(startDestination) {
+        if (startDestination != Screen.Login.route) {
+            app.notificationTokenSync.syncCurrentTokenIfEnabled()
         }
     }
 

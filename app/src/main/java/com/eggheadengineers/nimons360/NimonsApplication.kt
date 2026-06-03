@@ -5,6 +5,7 @@ import com.eggheadengineers.nimons360.core.battery.BatteryProvider
 import com.eggheadengineers.nimons360.core.files.FavoriteLocationPhotoStore
 import com.eggheadengineers.nimons360.core.location.LocationTracker
 import com.eggheadengineers.nimons360.core.network.ConnectivityObserver
+import com.eggheadengineers.nimons360.core.notifications.NotificationTokenSync
 import com.eggheadengineers.nimons360.core.preferences.UserPreferenceStore
 import com.eggheadengineers.nimons360.core.sensor.OrientationProvider
 import com.eggheadengineers.nimons360.core.session.SessionManager
@@ -67,5 +68,8 @@ class NimonsApplication : Application() {
     }
     val userPreferenceStore by lazy {
         UserPreferenceStore(this)
+    }
+    val notificationTokenSync by lazy {
+        NotificationTokenSync(notificationRepository, userPreferenceStore)
     }
 }
