@@ -4,7 +4,9 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import com.eggheadengineers.nimons360.R
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +33,7 @@ import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.FiberManualRecord
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.QrCode
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -55,6 +58,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -62,6 +66,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.eggheadengineers.nimons360.core.share.createQrBitmap
+import com.eggheadengineers.nimons360.core.share.writeShareFile
 import com.eggheadengineers.nimons360.domain.model.FamilyDetail
 import com.eggheadengineers.nimons360.domain.model.FamilyMember
 import com.eggheadengineers.nimons360.domain.model.LiveStream
@@ -88,6 +94,7 @@ import com.eggheadengineers.nimons360.ui.theme.SurfaceContainerLow
 import com.eggheadengineers.nimons360.ui.theme.TextPrimary
 import com.eggheadengineers.nimons360.ui.theme.TextSecondary
 import com.eggheadengineers.nimons360.ui.theme.TextTertiary
+import java.io.ByteArrayOutputStream
 import java.util.Calendar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
@@ -132,6 +139,7 @@ fun FamilyDetailScreen(
     var consumedInitialJoinCode by rememberSaveable { mutableStateOf(false) }
     var showLeaveDialog by rememberSaveable { mutableStateOf(false) }
     var showNotificationSheet by rememberSaveable { mutableStateOf(false) }
+    var showQrSheet by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(state.feedback) {
         state.feedback?.let {
@@ -212,6 +220,7 @@ fun FamilyDetailScreen(
                     onGoLive = onGoLive,
                     onWatchStream = onWatchStream,
                     onNotifyClick = { showNotificationSheet = true },
+                    onQrClick = { showQrSheet = true },
                     onShareClick = {
                         val detail = state.detail
                         if (detail?.code.isNullOrBlank()) {
@@ -292,6 +301,15 @@ fun FamilyDetailScreen(
             )
         }
     }
+
+    if (showQrSheet) {
+        state.detail?.let { detail ->
+            FamilyQrBottomSheet(
+                detail = detail,
+                onDismiss = { showQrSheet = false },
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -347,6 +365,7 @@ private fun FamilyDetailContent(
     onGoLive: () -> Unit,
     onWatchStream: (String) -> Unit,
     onNotifyClick: () -> Unit,
+    onQrClick: () -> Unit,
     onShareClick: () -> Unit,
     onCopyCode: (String) -> Unit,
 ) {
@@ -606,6 +625,19 @@ private fun FamilyDetailContent(
                             )
                         }
                         IconButton(
+                            onClick = onQrClick,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp),
+                            enabled = !detail.code.isNullOrBlank(),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.QrCode,
+                                contentDescription = "Show family QR code",
+                                tint = if (!detail.code.isNullOrBlank()) Primary else TextSecondary,
+                            )
+                        }
+                        IconButton(
                             onClick = onNotifyClick,
                             modifier = Modifier
                                 .weight(1f)
@@ -827,6 +859,68 @@ private fun FamilyNotificationBottomSheet(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FamilyQrBottomSheet(
+    detail: FamilyDetail,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    val sheetState = rememberModalBottomSheetState()
+    val link = detail.familyDeepLink()
+    val qrBitmap = remember(link) { link?.let(::createQrBitmap) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        containerColor = Surface,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = AppGrid.ScreenHorizontal)
+                .padding(bottom = AppGrid.Space8),
+            verticalArrangement = Arrangement.spacedBy(AppGrid.Space4),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(AppGrid.Space1),
+            ) {
+                Text(
+                    text = "Family QR code",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = TextPrimary,
+                )
+                Text(
+                    text = detail.name,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary,
+                )
+            }
+            if (qrBitmap != null) {
+                Image(
+                    bitmap = qrBitmap.asImageBitmap(),
+                    contentDescription = "Family invite QR code",
+                    modifier = Modifier.size(220.dp),
+                )
+                AppDarkButton(
+                    text = "Share QR code",
+                    onClick = { shareQrCode(context, detail, qrBitmap) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            } else {
+                Text(
+                    text = "Family code is unavailable.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                )
+            }
+        }
+    }
+}
+
 private fun defaultGreetingMessage(): String {
     val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
     return when (hour) {
@@ -837,13 +931,30 @@ private fun defaultGreetingMessage(): String {
 }
 
 private fun shareFamilyLink(context: Context, detail: FamilyDetail) {
-    val code = detail.code ?: return
-    val link = "nimons360://family/${detail.id}?code=$code"
+    val link = detail.familyDeepLink() ?: return
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
         putExtra(Intent.EXTRA_TEXT, "Join ${detail.name} on Nimons360: $link")
     }
     context.startActivity(Intent.createChooser(intent, "Share family link"))
+}
+
+private fun shareQrCode(context: Context, detail: FamilyDetail, bitmap: Bitmap) {
+    val output = ByteArrayOutputStream()
+    bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
+    val uri = writeShareFile(context, "nimons360-family-${detail.id}-qr.png", output.toByteArray())
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "image/png"
+        putExtra(Intent.EXTRA_STREAM, uri)
+        putExtra(Intent.EXTRA_TEXT, "Join ${detail.name} on Nimons360: ${detail.familyDeepLink()}")
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(Intent.createChooser(intent, "Share family QR code"))
+}
+
+private fun FamilyDetail.familyDeepLink(): String? {
+    val code = this.code ?: return null
+    return "nimons360://family/$id?code=$code"
 }
 
 private fun resolveUserImageUrl(value: String): String =
