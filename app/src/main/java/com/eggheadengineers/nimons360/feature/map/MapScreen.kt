@@ -76,6 +76,7 @@ import com.eggheadengineers.nimons360.NimonsApplication
 import com.eggheadengineers.nimons360.core.media.ImagePayload
 import com.eggheadengineers.nimons360.core.media.createCacheImageUri
 import com.eggheadengineers.nimons360.core.media.readImagePayload
+import com.eggheadengineers.nimons360.core.share.writeShareFile
 import com.eggheadengineers.nimons360.domain.model.FavoriteLocation
 import com.eggheadengineers.nimons360.domain.model.FavoriteLocationPhotoInput
 import com.eggheadengineers.nimons360.domain.model.MemberPresence
@@ -104,6 +105,7 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.CustomZoomButtonsController
+import java.io.ByteArrayOutputStream
 import java.io.File
 import kotlin.math.roundToInt
 import android.graphics.Color as AndroidColor
@@ -445,6 +447,9 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
                             battery = state.battery.level,
                             charging = state.battery.charging,
                             networkStatus = state.networkStatus,
+                            onShareStory = {
+                                mapViewRef.value?.let { shareMapScreenshot(context, it) }
+                            },
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -504,6 +509,7 @@ private fun MyLocationCard(
     battery: Int,
     charging: Boolean,
     networkStatus: com.eggheadengineers.nimons360.core.network.NetworkStatus,
+    onShareStory: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     MapInfoPanel(
@@ -524,6 +530,8 @@ private fun MyLocationCard(
             "Heading" to "${rotation.roundToInt()}°",
         ),
         footer = "Lat ${"%.4f".format(lat)}   Lon ${"%.4f".format(lng)}",
+        actionText = "Share story",
+        onActionClick = onShareStory,
     )
 }
 
@@ -853,6 +861,8 @@ private fun MapInfoPanel(
     footer: String,
     modifier: Modifier = Modifier,
     onDismiss: (() -> Unit)? = null,
+    actionText: String? = null,
+    onActionClick: (() -> Unit)? = null,
 ) {
     Surface(
         modifier = modifier,
@@ -890,7 +900,14 @@ private fun MapInfoPanel(
                         color = TextSecondary,
                     )
                 }
-                if (onDismiss != null) {
+                if (actionText != null && onActionClick != null) {
+                    Text(
+                        text = actionText,
+                        modifier = Modifier.clickable(onClick = onActionClick),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Primary,
+                    )
+                } else if (onDismiss != null) {
                     Text(
                         text = "Close",
                         modifier = Modifier.clickable(onClick = onDismiss),
@@ -1351,4 +1368,33 @@ private fun openGoogleMapsNavigation(context: android.content.Context, lat: Doub
     context.startActivity(
         if (mapsIntent.resolveActivity(context.packageManager) != null) mapsIntent else fallbackIntent
     )
+}
+
+private fun shareMapScreenshot(context: android.content.Context, mapView: MapView) {
+    if (mapView.width <= 0 || mapView.height <= 0) return
+    val bitmap = Bitmap.createBitmap(mapView.width, mapView.height, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    mapView.draw(canvas)
+    val bytes = ByteArrayOutputStream().use { output ->
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
+        output.toByteArray()
+    }
+    val uri = writeShareFile(context, "nimons360-map-story.png", bytes)
+    val storyIntent = Intent("com.instagram.share.ADD_TO_STORY").apply {
+        setDataAndType(uri, "image/png")
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        putExtra("interactive_asset_uri", uri)
+        setPackage("com.instagram.android")
+    }
+    val fallbackIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "image/png"
+        putExtra(Intent.EXTRA_STREAM, uri)
+        putExtra(Intent.EXTRA_TEXT, "Nimons360 live map")
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    if (storyIntent.resolveActivity(context.packageManager) != null) {
+        context.startActivity(storyIntent)
+    } else {
+        context.startActivity(Intent.createChooser(fallbackIntent, "Share map screenshot"))
+    }
 }
