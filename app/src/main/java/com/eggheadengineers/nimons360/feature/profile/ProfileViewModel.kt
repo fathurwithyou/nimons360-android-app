@@ -1,12 +1,16 @@
 package com.eggheadengineers.nimons360.feature.profile
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import com.eggheadengineers.nimons360.core.notifications.NotificationTokenSync
+import com.eggheadengineers.nimons360.core.presence.PresenceLocationService
 import com.eggheadengineers.nimons360.core.preferences.UserPreferenceStore
+import com.eggheadengineers.nimons360.core.validation.validatePersonName
 import com.eggheadengineers.nimons360.data.network.userFriendlyMessage
 import com.eggheadengineers.nimons360.domain.model.Profile
 import com.eggheadengineers.nimons360.domain.repository.AuthRepository
@@ -26,6 +30,8 @@ class ProfileViewModel(
     private val authRepository: AuthRepository,
     private val profileRepository: ProfileRepository,
     private val userPreferenceStore: UserPreferenceStore,
+    private val notificationTokenSync: NotificationTokenSync,
+    private val appContext: Context,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState
@@ -56,6 +62,11 @@ class ProfileViewModel(
     }
 
     fun updateName(name: String) {
+        val validationError = validatePersonName(name)
+        if (validationError != null) {
+            _uiState.value = uiState.value.copy(error = validationError)
+            return
+        }
         viewModelScope.launch {
             _uiState.value = uiState.value.copy(isLoading = true, error = null)
             profileRepository.updateName(name).fold(
@@ -98,7 +109,6 @@ class ProfileViewModel(
     }
 
     fun setNotificationsEnabled(enabled: Boolean) {
-        userPreferenceStore.setNotificationEnabled(enabled)
         _uiState.value = uiState.value.copy(
             notificationsEnabled = enabled,
             updateMessage = if (enabled) {
@@ -107,10 +117,22 @@ class ProfileViewModel(
                 "Notifications are disabled on this device."
             },
         )
+        viewModelScope.launch {
+            runCatching { notificationTokenSync.syncPreference(enabled) }.onFailure {
+                _uiState.value = uiState.value.copy(
+                    error = it.userFriendlyMessage("Failed to sync notification preference"),
+                )
+            }
+        }
     }
 
     fun setLocationSharingEnabled(enabled: Boolean) {
         userPreferenceStore.setLocationSharingEnabled(enabled)
+        if (enabled) {
+            PresenceLocationService.start(appContext)
+        } else {
+            PresenceLocationService.stop(appContext)
+        }
         _uiState.value = uiState.value.copy(
             locationSharingEnabled = enabled,
             updateMessage = if (enabled) {
@@ -144,9 +166,17 @@ class ProfileViewModel(
         private val authRepo: AuthRepository,
         private val profileRepo: ProfileRepository,
         private val userPreferenceStore: UserPreferenceStore,
+        private val notificationTokenSync: NotificationTokenSync,
+        private val appContext: Context,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>) =
-            ProfileViewModel(authRepo, profileRepo, userPreferenceStore) as T
+            ProfileViewModel(
+                authRepo,
+                profileRepo,
+                userPreferenceStore,
+                notificationTokenSync,
+                appContext.applicationContext,
+            ) as T
     }
 }
