@@ -46,9 +46,12 @@ class PresenceRepositoryImpl(
     private var webSocket: WebSocket? = null
     private val _members = MutableStateFlow<Map<String, MemberPresence>>(emptyMap())
     @Volatile private var shouldReconnect = false
+    @Volatile private var connectionClients = 0
 
     override fun connect() {
+        connectionClients += 1
         shouldReconnect = true
+        if (webSocket != null) return
         openSocket()
     }
 
@@ -122,6 +125,8 @@ class PresenceRepositoryImpl(
     }
 
     override fun disconnect() {
+        connectionClients = (connectionClients - 1).coerceAtLeast(0)
+        if (connectionClients > 0) return
         shouldReconnect = false
         webSocket?.close(1000, "Disconnecting")
         webSocket = null

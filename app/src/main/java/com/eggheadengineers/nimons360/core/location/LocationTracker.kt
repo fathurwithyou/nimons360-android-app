@@ -12,7 +12,8 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
-class LocationTracker(private val context: Context) {
+class LocationTracker(context: Context) {
+    val context: Context = context.applicationContext
 
     fun locationUpdates(minTimeMs: Long = 3000L, minDistanceM: Float = 0f): Flow<Location> = callbackFlow {
         val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
