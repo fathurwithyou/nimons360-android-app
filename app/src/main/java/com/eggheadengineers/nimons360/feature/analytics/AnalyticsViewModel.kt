@@ -55,6 +55,9 @@ data class AnalyticsUiState(
     val selectedMonthDailyDistances: List<DailyDistance>
         get() = buildMonthGraph(selectedMonthKey, dailyDistances)
 
+    val selectedMonthTotalKm: Double
+        get() = monthlyDistances.firstOrNull { it.monthKey == selectedMonthKey }?.distanceKm ?: 0.0
+
     val totalDistanceKm: Double
         get() = dailyDistances.sumOf { it.distanceKm }
 
