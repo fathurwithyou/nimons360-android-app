@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -76,28 +77,44 @@ fun AnalyticsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(AppGrid.Space3),
             ) {
+                MetricCard("Monthly avg", formatKm(state.monthlyDistanceAverageKm), Modifier.weight(1f))
+                MetricCard("Total distance", formatKm(state.totalDistanceKm), Modifier.weight(1f))
+            }
+        }
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(AppGrid.Space3),
+            ) {
+                MetricCard("Daily avg", formatKm(state.dailyDistanceAverageKm), Modifier.weight(1f))
+                MetricCard("Active days", state.activeDays.toString(), Modifier.weight(1f))
+            }
+        }
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(AppGrid.Space3),
+            ) {
                 MetricCard("Locations", state.locations.size.toString(), Modifier.weight(1f))
                 MetricCard("Photos", state.photoCount.toString(), Modifier.weight(1f))
             }
         }
         item {
-            MetricCard(
-                label = "Marked route distance",
-                value = "${"%.2f".format(state.totalDistanceKm)} km",
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-        item {
             AppCard {
                 Column(verticalArrangement = Arrangement.spacedBy(AppGrid.Space3)) {
                     Text(
-                        text = "Distance graph",
+                        text = "Daily distance graph",
                         style = MaterialTheme.typography.titleMedium,
                         color = TextPrimary,
                     )
-                    DistanceGraph(state.segmentDistancesKm)
                     Text(
-                        text = "Each bar represents distance between two marked locations by creation order.",
+                        text = state.selectedMonthKey,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary,
+                    )
+                    DistanceGraph(state.selectedMonthDailyDistances)
+                    Text(
+                        text = "Each bar represents one day in the selected month.",
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary,
                     )
@@ -159,20 +176,23 @@ private fun MetricCard(label: String, value: String, modifier: Modifier = Modifi
 }
 
 @Composable
-private fun DistanceGraph(values: List<Double>) {
+private fun DistanceGraph(values: List<DailyDistance>) {
     val lineColor = Info
     Canvas(
         modifier = Modifier
             .fillMaxWidth()
+            .height(156.dp)
             .padding(vertical = AppGrid.Space2)
             .background(Color.Transparent)
             .padding(vertical = AppGrid.Space4),
     ) {
-        val max = values.maxOrNull()?.coerceAtLeast(0.1) ?: 0.1
+        val max = values.maxOfOrNull { it.distanceKm }?.coerceAtLeast(0.1) ?: 0.1
         val gap = size.width / (values.size.coerceAtLeast(1) * 2f + 1f)
-        values.ifEmpty { listOf(0.0) }.forEachIndexed { index, value ->
+        values.ifEmpty {
+            listOf(DailyDistance("", 1, "", 0.0))
+        }.forEachIndexed { index, value ->
             val x = gap * (index * 2 + 1)
-            val height = (size.height * (value / max)).toFloat().coerceAtLeast(8f)
+            val height = (size.height * (value.distanceKm / max)).toFloat().coerceAtLeast(8f)
             drawLine(
                 color = lineColor,
                 start = Offset(x, size.height),
@@ -210,3 +230,5 @@ private fun RecentLocationRow(location: FavoriteLocation) {
 
 private fun formatDate(value: Long): String =
     SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.US).format(Date(value))
+
+private fun formatKm(value: Double): String = "${"%.2f".format(value)} km"
