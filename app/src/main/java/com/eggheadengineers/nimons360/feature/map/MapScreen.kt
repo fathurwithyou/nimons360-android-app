@@ -527,6 +527,9 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
                                 onShareStory = {
                                     mapViewRef.value?.let { shareMapScreenshot(context, it) }
                                 },
+                                onMarkCurrentLocation = {
+                                    viewModel.requestAddFavorite(state.myLat, state.myLng)
+                                },
                                 onDismiss = { myLocationPanelVisible = false },
                                 modifier = Modifier.fillMaxWidth(),
                             )
@@ -601,6 +604,7 @@ private fun MyLocationCard(
     charging: Boolean,
     networkStatus: com.eggheadengineers.nimons360.core.network.NetworkStatus,
     onShareStory: () -> Unit,
+    onMarkCurrentLocation: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -622,8 +626,10 @@ private fun MyLocationCard(
             "Heading" to "${rotation.roundToInt()}°",
         ),
         footer = "Lat ${"%.4f".format(lat)}   Lon ${"%.4f".format(lng)}",
-        actionText = "Share story",
-        onActionClick = onShareStory,
+        actionItems = listOf(
+            "Mark current location" to onMarkCurrentLocation,
+            "Share story" to onShareStory,
+        ),
     )
 }
 
@@ -958,6 +964,7 @@ private fun MapInfoPanel(
     onDismiss: (() -> Unit)? = null,
     actionText: String? = null,
     onActionClick: (() -> Unit)? = null,
+    actionItems: List<Pair<String, () -> Unit>> = emptyList(),
 ) {
     Surface(
         modifier = modifier,
@@ -996,10 +1003,17 @@ private fun MapInfoPanel(
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(AppGrid.Space3)) {
-                    if (actionText != null && onActionClick != null) {
+                    val actions = if (actionItems.isNotEmpty()) {
+                        actionItems
+                    } else if (actionText != null && onActionClick != null) {
+                        listOf(actionText to onActionClick)
+                    } else {
+                        emptyList()
+                    }
+                    actions.forEach { (text, action) ->
                         Text(
-                            text = actionText,
-                            modifier = Modifier.clickable(onClick = onActionClick),
+                            text = text,
+                            modifier = Modifier.clickable(onClick = action),
                             style = MaterialTheme.typography.labelMedium,
                             color = Primary,
                         )
