@@ -1,5 +1,6 @@
 package com.eggheadengineers.nimons360.feature.livestream
 
+import android.content.res.Configuration
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -62,6 +65,7 @@ fun ViewerScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     val exoPlayer = remember {
         ExoPlayer.Builder(context).build().apply {
@@ -102,80 +106,64 @@ fun ViewerScreen(
             )
         },
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(
-                    top = innerPadding.calculateTopPadding(),
-                    bottom = innerPadding.calculateBottomPadding(),
-                )
-                .padding(
-                    horizontal = AppGrid.ScreenHorizontal,
-                    vertical = AppGrid.Space4,
-                ),
-            verticalArrangement = Arrangement.spacedBy(AppGrid.Space4),
-        ) {
+        val videoSurface = @Composable { videoModifier: Modifier ->
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(320.dp),
+                modifier = videoModifier,
                 shape = RoundedCornerShape(AppGrid.CardRadius),
                 color = Color.Black,
                 border = BorderStroke(1.dp, Border.copy(alpha = 0.4f)),
             ) {
                 when {
-                    state.isLoading -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator(color = Color.White)
-                        }
+                    state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Color.White)
                     }
-                    state.isEnded || state.stream == null -> {
-                        EndedState()
-                    }
-                    else -> {
-                        AndroidView(
-                            modifier = Modifier.fillMaxSize(),
-                            factory = { ctx ->
-                                PlayerView(ctx).apply {
-                                    player = exoPlayer
-                                    useController = false
-                                }
-                            },
-                        )
-                    }
+                    state.isEnded || state.stream == null -> EndedState()
+                    else -> AndroidView(
+                        modifier = Modifier.fillMaxSize(),
+                        factory = { ctx -> PlayerView(ctx).apply { player = exoPlayer; useController = false } },
+                    )
                 }
             }
+        }
 
+        val infoContent = @Composable {
             state.stream?.let { stream ->
                 Column(verticalArrangement = Arrangement.spacedBy(AppGrid.Space1)) {
-                    Text(
-                        text = stream.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = TextPrimary,
-                    )
-                    Text(
-                        text = "${stream.broadcasterName} is streaming live",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
-                    )
+                    Text(stream.title, style = MaterialTheme.typography.titleMedium, color = TextPrimary)
+                    Text("${stream.broadcasterName} is streaming live", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                 }
             }
-
             if (state.error != null) {
-                Text(
-                    text = state.error ?: "",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = ErrorColor,
-                )
+                Text(state.error ?: "", style = MaterialTheme.typography.bodyMedium, color = ErrorColor)
                 Spacer(Modifier.size(AppGrid.Space1))
-                AppDarkButton(
-                    text = "Try again",
-                    onClick = { viewModel.load() },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                AppDarkButton(text = "Try again", onClick = { viewModel.load() }, modifier = Modifier.fillMaxWidth())
+            }
+        }
+
+        if (isLandscape) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = innerPadding.calculateTopPadding(), bottom = innerPadding.calculateBottomPadding())
+                    .padding(AppGrid.Space4),
+                horizontalArrangement = Arrangement.spacedBy(AppGrid.Space4),
+            ) {
+                videoSurface(Modifier.weight(1.4f).fillMaxHeight())
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(AppGrid.Space4),
+                ) { infoContent() }
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = innerPadding.calculateTopPadding(), bottom = innerPadding.calculateBottomPadding())
+                    .padding(horizontal = AppGrid.ScreenHorizontal, vertical = AppGrid.Space4),
+                verticalArrangement = Arrangement.spacedBy(AppGrid.Space4),
+            ) {
+                videoSurface(Modifier.fillMaxWidth().height(320.dp))
+                infoContent()
             }
         }
     }

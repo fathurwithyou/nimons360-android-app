@@ -2,6 +2,7 @@ package com.eggheadengineers.nimons360.feature.livestream
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.view.SurfaceHolder
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -43,6 +44,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -76,6 +80,7 @@ fun BroadcasterScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val snackbarHostState = remember { SnackbarHostState() }
 
     var hasPermissions by remember {
@@ -122,101 +127,75 @@ fun BroadcasterScreen(
             )
         },
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(
-                    top = innerPadding.calculateTopPadding(),
-                    bottom = innerPadding.calculateBottomPadding(),
+        if (isLandscape) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(
+                        top = innerPadding.calculateTopPadding(),
+                        bottom = innerPadding.calculateBottomPadding(),
+                    )
+                    .padding(AppGrid.Space4),
+                horizontalArrangement = Arrangement.spacedBy(AppGrid.Space4),
+            ) {
+                CameraPreview(
+                    enabled = hasPermissions,
+                    holder = rtmpCameraHolder,
+                    onPermissionRequest = { permissionLauncher.launch(RequiredPermissions) },
+                    onBroadcasterError = viewModel::reportBroadcasterError,
+                    modifier = Modifier.weight(1f).fillMaxSize(),
                 )
-                .padding(
-                    horizontal = AppGrid.ScreenHorizontal,
-                    vertical = AppGrid.Space4,
-                ),
-            verticalArrangement = Arrangement.spacedBy(AppGrid.Space4),
-        ) {
-            CameraPreview(
-                enabled = hasPermissions,
-                holder = rtmpCameraHolder,
-                onPermissionRequest = { permissionLauncher.launch(RequiredPermissions) },
-                onBroadcasterError = viewModel::reportBroadcasterError,
-            )
-
-            AppTextField(
-                value = state.title,
-                onValueChange = viewModel::onTitleChange,
-                label = { Text("Stream title") },
-                placeholder = { Text("What are you showing?") },
-                enabled = state.status == BroadcastStatus.Idle,
-                singleLine = true,
-            )
-
-            Spacer(modifier = Modifier.height(AppGrid.Space1))
-
-            when (state.status) {
-                BroadcastStatus.Idle -> {
-                    AppDarkButton(
-                        text = "Start broadcasting",
-                        onClick = {
-                            if (!hasPermissions) {
-                                permissionLauncher.launch(RequiredPermissions)
-                                return@AppDarkButton
-                            }
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(AppGrid.Space4),
+                ) {
+                    BroadcasterControls(
+                        state = state,
+                        hasPermissions = hasPermissions,
+                        onTitleChange = viewModel::onTitleChange,
+                        onStart = {
+                            if (!hasPermissions) { permissionLauncher.launch(RequiredPermissions); return@BroadcasterControls }
                             viewModel.requestStart { stream ->
-                                val url = "${stream.rtmpUrl}/${stream.streamKey}"
-                                rtmpCameraHolder.start(url) { message ->
-                                    viewModel.reportBroadcasterError(message)
-                                }
+                                rtmpCameraHolder.start("${stream.rtmpUrl}/${stream.streamKey}") { viewModel.reportBroadcasterError(it) }
                             }
                         },
-                        enabled = hasPermissions,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    if (!hasPermissions) {
-                        Text(
-                            text = "Camera and microphone access are required to broadcast.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary,
-                        )
-                    }
-                }
-
-                BroadcastStatus.Preparing -> {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(AppGrid.Space3),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        CircularProgressIndicator(
-                            color = TextPrimary,
-                            strokeWidth = 2.dp,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Text(
-                            text = "Starting…",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary,
-                        )
-                    }
-                }
-
-                BroadcastStatus.Live -> {
-                    AppDestructiveButton(
-                        text = "Stop broadcasting",
-                        onClick = {
-                            rtmpCameraHolder.stop()
-                            viewModel.requestStop(onBack)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
+                        onStop = { rtmpCameraHolder.stop(); viewModel.requestStop(onBack) },
                     )
                 }
-
-                BroadcastStatus.Stopping -> {
-                    Text(
-                        text = "Stopping…",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(
+                        top = innerPadding.calculateTopPadding(),
+                        bottom = innerPadding.calculateBottomPadding(),
                     )
-                }
+                    .padding(horizontal = AppGrid.ScreenHorizontal, vertical = AppGrid.Space4),
+                verticalArrangement = Arrangement.spacedBy(AppGrid.Space4),
+            ) {
+                CameraPreview(
+                    enabled = hasPermissions,
+                    holder = rtmpCameraHolder,
+                    onPermissionRequest = { permissionLauncher.launch(RequiredPermissions) },
+                    onBroadcasterError = viewModel::reportBroadcasterError,
+                    modifier = Modifier.height(340.dp),
+                )
+                Spacer(modifier = Modifier.height(AppGrid.Space1))
+                BroadcasterControls(
+                    state = state,
+                    hasPermissions = hasPermissions,
+                    onTitleChange = viewModel::onTitleChange,
+                    onStart = {
+                        if (!hasPermissions) { permissionLauncher.launch(RequiredPermissions); return@BroadcasterControls }
+                        viewModel.requestStart { stream ->
+                            rtmpCameraHolder.start("${stream.rtmpUrl}/${stream.streamKey}") { viewModel.reportBroadcasterError(it) }
+                        }
+                    },
+                    onStop = { rtmpCameraHolder.stop(); viewModel.requestStop(onBack) },
+                )
             }
         }
     }
@@ -253,16 +232,65 @@ private fun LiveBadge() {
 }
 
 @Composable
+private fun BroadcasterControls(
+    state: BroadcasterUiState,
+    hasPermissions: Boolean,
+    onTitleChange: (String) -> Unit,
+    onStart: () -> Unit,
+    onStop: () -> Unit,
+) {
+    AppTextField(
+        value = state.title,
+        onValueChange = onTitleChange,
+        label = { Text("Stream title") },
+        placeholder = { Text("What are you showing?") },
+        enabled = state.status == BroadcastStatus.Idle,
+        singleLine = true,
+    )
+    when (state.status) {
+        BroadcastStatus.Idle -> {
+            AppDarkButton(
+                text = "Start broadcasting",
+                onClick = onStart,
+                enabled = hasPermissions,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (!hasPermissions) {
+                Text(
+                    text = "Camera and microphone access are required to broadcast.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary,
+                )
+            }
+        }
+        BroadcastStatus.Preparing -> {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(AppGrid.Space3),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CircularProgressIndicator(color = TextPrimary, strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
+                Text(text = "Starting…", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+            }
+        }
+        BroadcastStatus.Live -> {
+            AppDestructiveButton(text = "Stop broadcasting", onClick = onStop, modifier = Modifier.fillMaxWidth())
+        }
+        BroadcastStatus.Stopping -> {
+            Text(text = "Stopping…", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+        }
+    }
+}
+
+@Composable
 private fun CameraPreview(
     enabled: Boolean,
     holder: RtmpCameraHolder,
     onPermissionRequest: () -> Unit,
     onBroadcasterError: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(340.dp),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AppGrid.CardRadius),
         color = Color.Black,
         border = BorderStroke(1.dp, Border.copy(alpha = 0.4f)),

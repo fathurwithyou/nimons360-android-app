@@ -40,7 +40,7 @@ data class MapUiState(
     val pendingFavoriteLng: Double? = null,
     val message: String? = null,
 ) {
-    val selectedMember: MemberPresence? 
+    val selectedMember: MemberPresence?
         get() = selectedMemberId?.let { members[it] }
     val filteredMembers: Map<String, MemberPresence>
         get() {

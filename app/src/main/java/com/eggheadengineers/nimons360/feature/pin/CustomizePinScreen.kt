@@ -6,8 +6,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.FileDownload
@@ -40,7 +43,10 @@ fun CustomizePinScreen(onBack: () -> Unit) {
             .fillMaxSize()
             .background(Background)
             .statusBarsPadding()
-            .padding(horizontal = AppGrid.ScreenHorizontal),
+            .navigationBarsPadding()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = AppGrid.ScreenHorizontal)
+            .padding(bottom = AppGrid.Space4),
         verticalArrangement = Arrangement.spacedBy(AppGrid.Space4),
     ) {
         AppTopBar(

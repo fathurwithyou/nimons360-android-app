@@ -22,6 +22,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -131,6 +134,7 @@ private enum class MapPhotoTarget {
 fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val isLandscape = LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     val coroutineScope = rememberCoroutineScope()
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var currentUserName by rememberSaveable { mutableStateOf("You") }
@@ -145,6 +149,7 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
     var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
     var pendingCameraTarget by remember { mutableStateOf<MapPhotoTarget?>(null) }
     var notifyingMember by remember { mutableStateOf<MemberPresence?>(null) }
+    var myLocationPanelVisible by rememberSaveable { mutableStateOf(true) }
 
     LaunchedEffect(state.message) {
         state.message?.let {
@@ -271,22 +276,28 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
                 selectedFavoriteSnapshot = it
             },
             onMapLongPress = { lat, lng -> viewModel.requestAddFavorite(lat, lng) },
+            onMyLocationClick = {
+                viewModel.selectMember(null)
+                myLocationPanelVisible = true
+            },
             onMapReady = { mapViewRef.value = it },
         )
 
         MapOverlayScrims()
 
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .statusBarsPadding()
-                .padding(end = AppGrid.ScreenHorizontal, top = AppGrid.Space3),
-        ) {
-            AvatarCircle(
-                initial = currentUserName.firstOrNull()?.uppercaseChar() ?: 'Y',
-                size = 40,
-                modifier = Modifier.clickable { onProfileClick() },
-            )
+        if (!isLandscape) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(end = AppGrid.ScreenHorizontal, top = AppGrid.Space3),
+            ) {
+                AvatarCircle(
+                    initial = currentUserName.firstOrNull()?.uppercaseChar() ?: 'Y',
+                    size = 40,
+                    modifier = Modifier.clickable { onProfileClick() },
+                )
+            }
         }
 
         Column(
@@ -296,7 +307,7 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
                 .padding(
                     start = AppGrid.ScreenHorizontal,
                     top = AppGrid.Space3,
-                    end = AppGrid.ScreenHorizontal + 52.dp,
+                    end = AppGrid.ScreenHorizontal + if (isLandscape) 0.dp else 52.dp,
                 ),
             verticalArrangement = Arrangement.spacedBy(AppGrid.Space3),
         ) {
@@ -331,16 +342,22 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
         if (state.hasLocationPermission) {
             Column(
                 modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = AppGrid.ScreenHorizontal),
+                    .align(if (isLandscape) Alignment.BottomStart else Alignment.CenterEnd)
+                    .padding(
+                        start = if (isLandscape) AppGrid.ScreenHorizontal else 0.dp,
+                        end = if (isLandscape) 0.dp else AppGrid.ScreenHorizontal,
+                        bottom = if (isLandscape) AppGrid.Space6 else 0.dp,
+                    ),
                 verticalArrangement = Arrangement.spacedBy(AppGrid.Space3),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 MapZoomControls(
                     onZoomIn = { mapViewRef.value?.controller?.zoomIn() },
                     onZoomOut = { mapViewRef.value?.controller?.zoomOut() },
+                    compact = isLandscape,
                 )
                 MapMyLocationButton(
+                    compact = isLandscape,
                     onClick = {
                         val lat = state.myLat
                         val lng = state.myLng
@@ -361,14 +378,20 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
             }
 
             val panelState = when {
-                state.pendingFavoriteLat != null -> MapBottomPanelState.AddFavorite
+                state.pendingFavoriteLat != null -> {
+                    myLocationPanelVisible = true
+                    MapBottomPanelState.AddFavorite
+                }
                 editingFavorite != null -> {
+                    myLocationPanelVisible = true
                     editingFavorite?.id?.let(MapBottomPanelState::EditFavorite) ?: MapBottomPanelState.MyLocation
                 }
                 selectedFavorite != null -> {
+                    myLocationPanelVisible = true
                     selectedFavorite?.id?.let(MapBottomPanelState::FavoriteDetail) ?: MapBottomPanelState.MyLocation
                 }
                 state.selectedMemberId != null -> {
+                    myLocationPanelVisible = true
                     state.selectedMemberId?.let(MapBottomPanelState::MemberDetail) ?: MapBottomPanelState.MyLocation
                 }
                 else -> MapBottomPanelState.MyLocation
@@ -376,11 +399,19 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
 
             AnimatedContent(
                 targetState = panelState,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(horizontal = AppGrid.ScreenHorizontal)
-                    .navigationBarsPadding()
-                    .padding(bottom = AppGrid.Space3),
+                modifier = if (isLandscape) {
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .navigationBarsPadding()
+                        .padding(end = AppGrid.ScreenHorizontal, bottom = AppGrid.Space3)
+                        .widthIn(max = 260.dp)
+                } else {
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = AppGrid.ScreenHorizontal)
+                        .navigationBarsPadding()
+                        .padding(bottom = AppGrid.Space3)
+                },
                 transitionSpec = {
                     ContentTransform(
                         targetContentEnter = slideInVertically(
@@ -474,19 +505,22 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
                         )
                     }
                     MapBottomPanelState.MyLocation -> {
-                        MyLocationCard(
-                            name = currentUserName,
-                            lat = state.myLat,
-                            lng = state.myLng,
-                            rotation = state.myRotation,
-                            battery = state.battery.level,
-                            charging = state.battery.charging,
-                            networkStatus = state.networkStatus,
-                            onShareStory = {
-                                mapViewRef.value?.let { shareMapScreenshot(context, it) }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                        if (myLocationPanelVisible) {
+                            MyLocationCard(
+                                name = currentUserName,
+                                lat = state.myLat,
+                                lng = state.myLng,
+                                rotation = state.myRotation,
+                                battery = state.battery.level,
+                                charging = state.battery.charging,
+                                networkStatus = state.networkStatus,
+                                onShareStory = {
+                                    mapViewRef.value?.let { shareMapScreenshot(context, it) }
+                                },
+                                onDismiss = { myLocationPanelVisible = false },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
                     }
                 }
             }
@@ -557,6 +591,7 @@ private fun MyLocationCard(
     charging: Boolean,
     networkStatus: com.eggheadengineers.nimons360.core.network.NetworkStatus,
     onShareStory: () -> Unit,
+    onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     MapInfoPanel(
@@ -564,7 +599,7 @@ private fun MyLocationCard(
         leadingInitial = name.firstOrNull()?.uppercaseChar() ?: 'Y',
         title = name,
         subtitle = "Your live location",
-        onDismiss = null,
+        onDismiss = onDismiss,
         rows = listOf(
             "Battery" to buildBatteryText(battery, charging),
             "Connection" to formatConnectivityLabel(
@@ -592,6 +627,7 @@ private fun OsmMapView(
     onMarkerClick: (MemberPresence) -> Unit,
     onFavoriteClick: (FavoriteLocation) -> Unit,
     onMapLongPress: (Double, Double) -> Unit,
+    onMyLocationClick: () -> Unit,
     onMapReady: (MapView) -> Unit,
 ) {
     val myMarkerRef = remember { mutableStateOf<Marker?>(null) }
@@ -653,7 +689,11 @@ private fun OsmMapView(
                         position = point
                         setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                         this.icon = icon
-                        title = "Me"
+                        infoWindow = null
+                        setOnMarkerClickListener { _, _ ->
+                            onMyLocationClick()
+                            true
+                        }
                     }
                     mapView.overlays.add(marker)
                     myMarkerRef.value = marker
@@ -664,7 +704,6 @@ private fun OsmMapView(
                 }
             }
 
-            // Member markers
             val staleMarkers = memberMarkers.keys - members.keys
             staleMarkers.forEach { id ->
                 memberMarkers[id]?.let { marker -> mapView.overlays.remove(marker) }
@@ -679,7 +718,6 @@ private fun OsmMapView(
                     existing.position = point
                     existing.icon = icon
                     existing.title = presence.name
-                    // Re-bind click so it always carries the latest presence snapshot
                     existing.setOnMarkerClickListener { _, _ ->
                         onMarkerClick(presence)
                         true
@@ -700,7 +738,6 @@ private fun OsmMapView(
                 }
             }
 
-            // Favorite location markers
             val currentFavIds = favoriteLocations.map { it.id }.toSet()
             val staleFavs = favoriteMarkers.keys - currentFavIds
             staleFavs.forEach { id ->
@@ -742,46 +779,40 @@ private fun OsmMapView(
 
 @Composable
 private fun MapZoomControls(
-    modifier: Modifier = Modifier,
     onZoomIn: () -> Unit,
     onZoomOut: () -> Unit,
+    compact: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
+    val buttonSize = if (compact) 32.dp else 40.dp
+    val buttonWidth = if (compact) 36.dp else 44.dp
+    val iconSize = if (compact) 14.dp else 18.dp
+    val cornerRadius = if (compact) 12.dp else 16.dp
+
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(cornerRadius),
         color = SurfaceColor.copy(alpha = 0.96f),
         border = androidx.compose.foundation.BorderStroke(1.dp, Border.copy(alpha = 0.3f)),
         shadowElevation = 8.dp,
     ) {
-        Column(
-            modifier = Modifier.width(44.dp),
-        ) {
+        Column(modifier = Modifier.width(buttonWidth)) {
             Box(
                 modifier = Modifier
-                    .size(width = 44.dp, height = 40.dp)
+                    .size(width = buttonWidth, height = buttonSize)
                     .clickable(onClick = onZoomIn),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.Add,
-                    contentDescription = "Zoom in",
-                    tint = TextPrimary,
-                    modifier = Modifier.size(18.dp),
-                )
+                Icon(Icons.Outlined.Add, contentDescription = "Zoom in", tint = TextPrimary, modifier = Modifier.size(iconSize))
             }
             HorizontalDivider(color = Border.copy(alpha = 0.22f))
             Box(
                 modifier = Modifier
-                    .size(width = 44.dp, height = 40.dp)
+                    .size(width = buttonWidth, height = buttonSize)
                     .clickable(onClick = onZoomOut),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.Remove,
-                    contentDescription = "Zoom out",
-                    tint = TextPrimary,
-                    modifier = Modifier.size(18.dp),
-                )
+                Icon(Icons.Outlined.Remove, contentDescription = "Zoom out", tint = TextPrimary, modifier = Modifier.size(iconSize))
             }
         }
     }
@@ -790,27 +821,25 @@ private fun MapZoomControls(
 @Composable
 private fun MapMyLocationButton(
     onClick: () -> Unit,
+    compact: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
+    val buttonSize = if (compact) 36.dp else 44.dp
+    val iconSize = if (compact) 14.dp else 18.dp
+    val cornerRadius = if (compact) 12.dp else 16.dp
+
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(cornerRadius),
         color = SurfaceColor.copy(alpha = 0.96f),
         border = androidx.compose.foundation.BorderStroke(1.dp, Border.copy(alpha = 0.3f)),
         shadowElevation = 8.dp,
     ) {
         Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clickable(onClick = onClick),
+            modifier = Modifier.size(buttonSize).clickable(onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = Icons.Outlined.MyLocation,
-                contentDescription = "My location",
-                tint = TextPrimary,
-                modifier = Modifier.size(18.dp),
-            )
+            Icon(Icons.Outlined.MyLocation, contentDescription = "My location", tint = TextPrimary, modifier = Modifier.size(iconSize))
         }
     }
 }
@@ -950,20 +979,23 @@ private fun MapInfoPanel(
                         color = TextSecondary,
                     )
                 }
-                if (actionText != null && onActionClick != null) {
-                    Text(
-                        text = actionText,
-                        modifier = Modifier.clickable(onClick = onActionClick),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Primary,
-                    )
-                } else if (onDismiss != null) {
-                    Text(
-                        text = "Close",
-                        modifier = Modifier.clickable(onClick = onDismiss),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = TextSecondary,
-                    )
+                Row(horizontalArrangement = Arrangement.spacedBy(AppGrid.Space3)) {
+                    if (actionText != null && onActionClick != null) {
+                        Text(
+                            text = actionText,
+                            modifier = Modifier.clickable(onClick = onActionClick),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Primary,
+                        )
+                    }
+                    if (onDismiss != null) {
+                        Text(
+                            text = "Close",
+                            modifier = Modifier.clickable(onClick = onDismiss),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = TextSecondary,
+                        )
+                    }
                 }
             }
 
@@ -1033,6 +1065,7 @@ private fun MapNotifyBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = AppGrid.ScreenHorizontal)
                 .padding(bottom = AppGrid.Space8),
             verticalArrangement = Arrangement.spacedBy(AppGrid.Space4),
@@ -1179,6 +1212,7 @@ private fun AddFavoritePanel(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(AppGrid.Space4),
             verticalArrangement = Arrangement.spacedBy(AppGrid.Space3),
         ) {
@@ -1266,6 +1300,7 @@ private fun FavoriteDetailPanel(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(AppGrid.Space4),
             verticalArrangement = Arrangement.spacedBy(AppGrid.Space3),
         ) {
@@ -1347,6 +1382,7 @@ private fun EditFavoritePanel(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(AppGrid.Space4),
             verticalArrangement = Arrangement.spacedBy(AppGrid.Space3),
         ) {
