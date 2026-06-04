@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
@@ -147,7 +148,7 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var currentUserName by rememberSaveable { mutableStateOf("You") }
     var currentUserProfileImageUrl by rememberSaveable { mutableStateOf<String?>(null) }
-    var myCustomPinBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var myCustomPinBitmap by remember { mutableStateOf<Bitmap?>(null) }
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
     var selectedFavorite by remember { mutableStateOf<FavoriteLocation?>(null) }
     var selectedFavoriteSnapshot by remember { mutableStateOf<FavoriteLocation?>(null) }
@@ -250,7 +251,7 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
             val pinFile = File(File(context.filesDir, "custom_pins"), "$selectedPinId.png")
             if (pinFile.exists()) {
                 myCustomPinBitmap = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    android.graphics.BitmapFactory.decodeFile(pinFile.absolutePath)
+                    BitmapFactory.decodeFile(pinFile.absolutePath)
                 }
             }
         }
@@ -527,10 +528,11 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
                     }
                     MapBottomPanelState.MyLocation -> {
                         if (myLocationPanelVisible) {
-                            MyLocationCard(
-                                name = currentUserName,
-                                lat = state.myLat,
-                                lng = state.myLng,
+                        MyLocationCard(
+                            name = currentUserName,
+                            imageUrl = currentUserProfileImageUrl,
+                            lat = state.myLat,
+                            lng = state.myLng,
                                 rotation = state.myRotation,
                                 battery = state.battery.level,
                                 charging = state.battery.charging,
@@ -646,6 +648,7 @@ private fun resolveProfileImageUrl(value: String): String =
 @Composable
 private fun MyLocationCard(
     name: String,
+    imageUrl: String?,
     lat: Double,
     lng: Double,
     rotation: Float,
@@ -660,6 +663,7 @@ private fun MyLocationCard(
     MapInfoPanel(
         modifier = modifier,
         leadingInitial = name.firstOrNull()?.uppercaseChar() ?: 'Y',
+        leadingImageUrl = imageUrl,
         title = name,
         subtitle = "Your live location",
         onDismiss = onDismiss,
@@ -695,7 +699,7 @@ private fun OsmMapView(
     myLat: Double,
     myLng: Double,
     myRotation: Float,
-    myCustomPinBitmap: android.graphics.Bitmap?,
+    myCustomPinBitmap: Bitmap?,
     members: Map<String, MemberPresence>,
     favoriteLocations: List<FavoriteLocation>,
     onMarkerClick: (MemberPresence) -> Unit,
@@ -757,12 +761,7 @@ private fun OsmMapView(
         update = { mapView ->
             if (myLat != 0.0 || myLng != 0.0) {
                 val point = GeoPoint(myLat, myLng)
-                val icon = if (myCustomPinBitmap != null) {
-                    val scaled = android.graphics.Bitmap.createScaledBitmap(myCustomPinBitmap, 96, 96, true)
-                    BitmapDrawable(mapView.resources, scaled)
-                } else {
-                    makeArrowDrawable(mapView.resources, Primary.toArgb(), myRotation)
-                }
+                val icon = favoriteMarkerIcon(mapView.resources, myCustomPinBitmap, fallbackColor = Primary.toArgb(), rotationDeg = myRotation)
                 if (myMarkerRef.value == null) {
                     val marker = Marker(mapView).apply {
                         position = point
@@ -839,7 +838,11 @@ private fun OsmMapView(
                     val marker = Marker(mapView).apply {
                         position = point
                         setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                        this.icon = makeStarDrawable(mapView.resources, Warning.toArgb())
+                        this.icon = favoriteMarkerIcon(
+                            mapView.resources,
+                            myCustomPinBitmap,
+                            fallbackColor = Warning.toArgb(),
+                        )
                         title = capturedFav.name
                         setOnMarkerClickListener { _, _ ->
                             onFavoriteClick(capturedFav)
@@ -855,6 +858,21 @@ private fun OsmMapView(
         },
     )
 }
+
+private fun favoriteMarkerIcon(
+    res: Resources,
+    customBitmap: Bitmap?,
+    fallbackColor: Int,
+    rotationDeg: Float = 0f,
+): BitmapDrawable =
+    if (customBitmap != null) {
+        val scaled = Bitmap.createScaledBitmap(customBitmap, 96, 96, true)
+        BitmapDrawable(res, scaled)
+    } else if (rotationDeg != 0f) {
+        makeArrowDrawable(res, fallbackColor, rotationDeg)
+    } else {
+        makeStarDrawable(res, fallbackColor)
+    }
 
 @Composable
 private fun MapZoomControls(
@@ -996,6 +1014,7 @@ private fun MemberDetailCard(
     MapInfoPanel(
         modifier = modifier.fillMaxWidth(),
         leadingInitial = member.name.firstOrNull()?.uppercaseChar() ?: '?',
+        leadingImageUrl = member.profileImageUrl,
         title = member.name,
         subtitle = member.email,
         onDismiss = onDismiss,
@@ -1018,6 +1037,7 @@ private fun MemberDetailCard(
 @Composable
 private fun MapInfoPanel(
     leadingInitial: Char,
+    leadingImageUrl: String? = null,
     title: String,
     subtitle: String,
     rows: List<Pair<String, String>>,
@@ -1045,8 +1065,9 @@ private fun MapInfoPanel(
                 horizontalArrangement = Arrangement.spacedBy(AppGrid.Space3),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                AvatarCircle(
+                ProfileEntryAvatar(
                     initial = leadingInitial,
+                    imageUrl = leadingImageUrl,
                     size = 38,
                 )
                 Column(

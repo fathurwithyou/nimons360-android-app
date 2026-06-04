@@ -137,13 +137,6 @@
                 android:layout_marginTop="@dimen/space_5"
                 android:text="Account details" />
 
-            <TextView
-                style="@style/Widget.Nimons.Xml.BodyMuted"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_1"
-                android:text="Core identity details used across the app." />
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -204,13 +197,6 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_5"
                 android:text="Preferences" />
-
-            <TextView
-                style="@style/Widget.Nimons.Xml.BodyMuted"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_1"
-                android:text="Control device notifications and live location privacy." />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -298,72 +284,87 @@
                 android:layout_marginTop="@dimen/space_5"
                 android:text="Tools" />
 
-            <TextView
-                style="@style/Widget.Nimons.Xml.BodyMuted"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_1"
-                android:text="Review marked-location activity and customize the map pin." />
-
             <LinearLayout
                 android:id="@+id/profileAnalyticsButton"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/button_height"
-                android:layout_marginTop="@dimen/space_4"
-                android:background="@drawable/bg_xml_secondary_button"
+                android:layout_height="56dp"
+                android:layout_marginTop="@dimen/space_3"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingStart="@dimen/space_4"
-                android:paddingEnd="@dimen/space_4">
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp">
 
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
                     android:contentDescription="@null"
                     android:src="@drawable/ic_xml_search" />
 
-                <TextView
-                    style="@style/Widget.Nimons.Xml.BodyLarge"
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
+                    android:layout_marginStart="@dimen/space_3"
                     android:layout_weight="1"
-                    android:text="Analytics"
-                    android:textColor="@color/xml_text_primary" />
-            </LinearLayout>
+                    android:orientation="vertical">
 
-            <LinearLayout
-                android:id="@+id/profileCustomizePinButton"
-                android:layout_width="match_parent"
-                android:layout_height="@dimen/button_height"
-                android:layout_marginTop="@dimen/space_3"
-                android:background="@drawable/bg_xml_secondary_button"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="@dimen/space_4"
-                android:paddingEnd="@dimen/space_4">
+                    <TextView
+                        style="@style/Widget.Nimons.Xml.BodyLarge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Analytics"
+                        android:textColor="@color/xml_text_primary" />
 
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_xml_pin_outline" />
-
-                <TextView
-                    style="@style/Widget.Nimons.Xml.BodyLarge"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:layout_weight="1"
-                    android:text="Customize pin"
-                    android:textColor="@color/xml_text_primary" />
+                    <TextView
+                        style="@style/Widget.Nimons.Xml.BodySmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="View your activity insights and performance." />
+                </LinearLayout>
             </LinearLayout>
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:layout_marginTop="@dimen/space_5"
                 android:background="@color/xml_border" />
+
+            <LinearLayout
+                android:id="@+id/profileCustomizePinButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_xml_pin_outline" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/space_3"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/Widget.Nimons.Xml.BodyLarge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Customize pin"
+                        android:textColor="@color/xml_text_primary" />
+
+                    <TextView
+                        style="@style/Widget.Nimons.Xml.BodySmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Personalize the appearance of your safety pin." />
+                </LinearLayout>
+            </LinearLayout>
 
             <TextView
                 style="@style/Widget.Nimons.Xml.TitleLarge"
