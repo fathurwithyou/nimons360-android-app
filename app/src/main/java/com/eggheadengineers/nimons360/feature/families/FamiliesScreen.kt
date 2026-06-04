@@ -10,7 +10,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -18,11 +20,13 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
+import com.eggheadengineers.nimons360.NimonsApplication
 import com.eggheadengineers.nimons360.R
 import com.eggheadengineers.nimons360.databinding.ScreenFamiliesXmlBinding
 import com.eggheadengineers.nimons360.ui.components.AppSnackbarHost
 import com.eggheadengineers.nimons360.ui.components.applyBoundedRipple
 import com.eggheadengineers.nimons360.ui.components.applyElasticPress
+import com.eggheadengineers.nimons360.ui.components.bindProfileImageButton
 import com.eggheadengineers.nimons360.ui.components.renderFamilyRows
 import com.eggheadengineers.nimons360.ui.components.setSkeletonVisible
 import com.eggheadengineers.nimons360.ui.components.setTopInsetPadding
@@ -40,6 +44,7 @@ fun FamiliesScreen(
     val context = LocalContext.current
     val density = LocalDensity.current
     val statusBarTopInset = WindowInsets.statusBars.getTop(density)
+    var profileImageUrl by remember { mutableStateOf<String?>(null) }
     val binding = remember(context) {
         ScreenFamiliesXmlBinding.inflate(LayoutInflater.from(context))
     }
@@ -47,6 +52,11 @@ fun FamiliesScreen(
 
     LaunchedEffect(state.error) {
         state.error?.let { snackbarHostState.showErrorAlert(it) }
+    }
+
+    LaunchedEffect(Unit) {
+        val app = context.applicationContext as? NimonsApplication
+        profileImageUrl = app?.sessionManager?.getUserProfileImageUrl()
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -73,6 +83,7 @@ fun FamiliesScreen(
             },
             update = {
                 binding.familiesHeroContent.setTopInsetPadding(statusBarTopInset)
+                binding.familiesProfileButton.bindProfileImageButton(profileImageUrl)
 
                 val showSkeleton = state.isLoading && state.families.isEmpty()
                 binding.familiesRefresh.isRefreshing = state.isLoading && !showSkeleton

@@ -131,6 +131,7 @@ fun NimonsNavGraph(
                     app.profileRepository,
                     app.userPreferenceStore,
                     app.notificationTokenSync,
+                    app.sessionManager,
                     app,
                 )
             )

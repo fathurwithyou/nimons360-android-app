@@ -6,8 +6,11 @@ import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewOutlineProvider
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.ImageView
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.doOnAttach
@@ -118,6 +121,31 @@ fun ImageView.loadUrl(
         fallback(placeholderResId)
     }
 }
+
+fun ImageButton.bindProfileImageButton(url: String?) {
+    contentDescription = "Profile"
+    clipToOutline = true
+    outlineProvider = ViewOutlineProvider.BACKGROUND
+    if (url.isNullOrBlank()) {
+        val inset = (10 * resources.displayMetrics.density).toInt()
+        setPadding(inset, inset, inset, inset)
+        scaleType = ImageView.ScaleType.CENTER
+        imageTintList = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.xml_text_primary))
+        setImageResource(R.drawable.ic_xml_account_circle)
+    } else {
+        setPadding(0, 0, 0, 0)
+        scaleType = ImageView.ScaleType.CENTER_CROP
+        imageTintList = null
+        loadUrl(resolveProfileImageUrl(url), placeholderResId = R.drawable.bg_xml_avatar_circle)
+    }
+}
+
+private fun resolveProfileImageUrl(value: String): String =
+    if (value.startsWith("http://") || value.startsWith("https://")) {
+        value
+    } else {
+        "https://mad.labpro.hmif.dev/${value.removePrefix("/")}"
+    }
 
 fun EditText.updateTextIfNeeded(value: String) {
     if (text?.toString() != value) {

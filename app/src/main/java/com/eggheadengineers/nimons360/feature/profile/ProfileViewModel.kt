@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import com.eggheadengineers.nimons360.core.notifications.NotificationTokenSync
 import com.eggheadengineers.nimons360.core.presence.PresenceLocationService
 import com.eggheadengineers.nimons360.core.preferences.UserPreferenceStore
+import com.eggheadengineers.nimons360.core.session.SessionManager
 import com.eggheadengineers.nimons360.core.validation.validatePersonName
 import com.eggheadengineers.nimons360.data.network.userFriendlyMessage
 import com.eggheadengineers.nimons360.domain.model.Profile
@@ -31,6 +32,7 @@ class ProfileViewModel(
     private val profileRepository: ProfileRepository,
     private val userPreferenceStore: UserPreferenceStore,
     private val notificationTokenSync: NotificationTokenSync,
+    private val sessionManager: SessionManager,
     private val appContext: Context,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -49,6 +51,7 @@ class ProfileViewModel(
             _uiState.value = uiState.value.copy(isLoading = true, error = null)
             profileRepository.getProfile().fold(
                 onSuccess = {
+                    sessionManager.saveUserProfileImageUrl(it.profileImageUrl)
                     _uiState.value = uiState.value.copy(profile = it, isLoading = false)
                 },
                 onFailure = {
@@ -71,6 +74,8 @@ class ProfileViewModel(
             _uiState.value = uiState.value.copy(isLoading = true, error = null)
             profileRepository.updateName(name).fold(
                 onSuccess = { updated ->
+                    sessionManager.saveUserName(updated.name)
+                    sessionManager.saveUserProfileImageUrl(updated.profileImageUrl)
                     _uiState.value = uiState.value.copy(
                         profile = updated,
                         isLoading = false,
@@ -92,6 +97,7 @@ class ProfileViewModel(
             _uiState.value = uiState.value.copy(isLoading = true, error = null)
             profileRepository.uploadPhoto(fileName, bytes, mediaType).fold(
                 onSuccess = { updated ->
+                    sessionManager.saveUserProfileImageUrl(updated.profileImageUrl)
                     _uiState.value = uiState.value.copy(
                         profile = updated,
                         isLoading = false,
@@ -167,6 +173,7 @@ class ProfileViewModel(
         private val profileRepo: ProfileRepository,
         private val userPreferenceStore: UserPreferenceStore,
         private val notificationTokenSync: NotificationTokenSync,
+        private val sessionManager: SessionManager,
         private val appContext: Context,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
@@ -176,6 +183,7 @@ class ProfileViewModel(
                 profileRepo,
                 userPreferenceStore,
                 notificationTokenSync,
+                sessionManager,
                 appContext.applicationContext,
             ) as T
     }
