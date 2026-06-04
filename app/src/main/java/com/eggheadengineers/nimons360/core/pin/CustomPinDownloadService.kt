@@ -6,22 +6,20 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Path
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import androidx.core.content.FileProvider
+import androidx.core.app.ServiceCompat
 import com.eggheadengineers.nimons360.MainActivity
 import com.eggheadengineers.nimons360.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 
@@ -34,27 +32,54 @@ class CustomPinDownloadService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(NOTIFICATION_ID, buildNotification(0, "Preparing pin download"))
+        val pinId = intent?.getStringExtra(EXTRA_PIN_ID) ?: return START_NOT_STICKY
+        val pinUrl = intent.getStringExtra(EXTRA_PIN_URL) ?: return START_NOT_STICKY
+
+        ServiceCompat.startForeground(
+            this,
+            NOTIFICATION_ID,
+            buildNotification(0, "Preparing download"),
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC else 0,
+        )
+
         serviceScope.launch {
-            for (progress in listOf(18, 42, 67, 86)) {
-                delay(450L)
-                notifyProgress(progress, "Downloading custom pin")
+            downloadPin(pinId, pinUrl)
+            withContext(Dispatchers.Main) {
+                notifyDone(pinId)
+                stopForeground(STOP_FOREGROUND_DETACH)
+                stopSelf()
             }
-            writePinFile()
-            notifyDone()
-            stopForeground(STOP_FOREGROUND_DETACH)
-            stopSelf()
         }
         return START_NOT_STICKY
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    private fun writePinFile() {
-        val dir = File(filesDir, "custom_pins").apply { mkdirs() }
-        val file = File(dir, PIN_FILE_NAME)
-        FileOutputStream(file).use { output ->
-            createPinBitmap().compress(Bitmap.CompressFormat.PNG, 100, output)
+    private suspend fun downloadPin(pinId: String, url: String) {
+        try {
+            val client = OkHttpClient()
+            val request = Request.Builder().url(url).build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return
+                val body = response.body ?: return
+                val contentLength = body.contentLength()
+                val inputStream = body.byteStream()
+                val dir = File(filesDir, "custom_pins").apply { mkdirs() }
+                val file = File(dir, "$pinId.png")
+                var bytesRead = 0L
+                val buffer = ByteArray(8192)
+                FileOutputStream(file).use { output ->
+                    while (true) {
+                        val read = inputStream.read(buffer)
+                        if (read == -1) break
+                        output.write(buffer, 0, read)
+                        bytesRead += read
+                        val progress = if (contentLength > 0) (bytesRead * 100 / contentLength).toInt() else 50
+                        notifyProgress(progress.coerceIn(0, 99), "Downloading $pinId pin")
+                    }
+                }
+            }
+        } catch (_: Exception) {
         }
     }
 
@@ -65,27 +90,18 @@ class CustomPinDownloadService : Service() {
         )
     }
 
-    private fun notifyDone() {
-        val uri = FileProvider.getUriForFile(
-            this,
-            "$packageName.fileprovider",
-            File(File(filesDir, "custom_pins"), PIN_FILE_NAME),
-        )
-        val openIntent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, "image/png")
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            this,
-            2,
-            Intent.createChooser(openIntent, "Open custom pin"),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
+    private fun notifyDone(pinId: String) {
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_xml_pin_filled)
-            .setContentTitle("Custom pin ready")
-            .setContentText("Your Nimons360 pin has been downloaded.")
-            .setContentIntent(pendingIntent)
+            .setContentTitle("Pin ready")
+            .setContentText("$pinId pin downloaded. Tap to open.")
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    this, 0,
+                    Intent(this, MainActivity::class.java),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                )
+            )
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
@@ -96,58 +112,37 @@ class CustomPinDownloadService : Service() {
         NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_xml_pin_filled)
             .setContentTitle(title)
-            .setContentText("$progress% complete")
+            .setContentText("$progress%")
             .setContentIntent(
                 PendingIntent.getActivity(
-                    this,
-                    1,
+                    this, 1,
                     Intent(this, MainActivity::class.java),
                     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-                ),
+                )
             )
-            .setProgress(100, progress, false)
+            .setProgress(100, progress, progress == 0)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
 
     private fun ensureChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            "Custom pin downloads",
-            NotificationManager.IMPORTANCE_LOW,
-        )
+        val channel = NotificationChannel(CHANNEL_ID, "Custom pin downloads", NotificationManager.IMPORTANCE_LOW)
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
-    private fun createPinBitmap(): Bitmap {
-        val bitmap = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(18, 18, 18) }
-        val highlight = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(241, 236, 229) }
-        val path = Path().apply {
-            moveTo(128f, 236f)
-            cubicTo(78f, 172f, 46f, 132f, 46f, 88f)
-            cubicTo(46f, 42f, 82f, 18f, 128f, 18f)
-            cubicTo(174f, 18f, 210f, 42f, 210f, 88f)
-            cubicTo(210f, 132f, 178f, 172f, 128f, 236f)
-            close()
-        }
-        canvas.drawPath(path, fill)
-        canvas.drawCircle(128f, 86f, 34f, highlight)
-        return bitmap
-    }
-
     companion object {
+        const val EXTRA_PIN_ID = "pin_id"
+        const val EXTRA_PIN_URL = "pin_url"
         private const val CHANNEL_ID = "custom_pin_downloads"
         private const val NOTIFICATION_ID = 3602
-        const val PIN_FILE_NAME = "nimons_custom_pin.png"
 
-        fun start(context: Context) {
-            androidx.core.content.ContextCompat.startForegroundService(
-                context,
-                Intent(context, CustomPinDownloadService::class.java),
-            )
+        fun start(context: Context, pinId: String, pinUrl: String) {
+            val intent = Intent(context, CustomPinDownloadService::class.java).apply {
+                putExtra(EXTRA_PIN_ID, pinId)
+                putExtra(EXTRA_PIN_URL, pinUrl)
+            }
+            androidx.core.content.ContextCompat.startForegroundService(context, intent)
         }
     }
 }

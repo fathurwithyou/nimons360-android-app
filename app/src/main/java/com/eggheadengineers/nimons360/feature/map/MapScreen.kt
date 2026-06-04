@@ -138,6 +138,7 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
     val coroutineScope = rememberCoroutineScope()
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var currentUserName by rememberSaveable { mutableStateOf("You") }
+    var myCustomPinBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
     var selectedFavorite by remember { mutableStateOf<FavoriteLocation?>(null) }
     var selectedFavoriteSnapshot by remember { mutableStateOf<FavoriteLocation?>(null) }
@@ -232,8 +233,16 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
     LaunchedEffect(context) {
         val app = context.applicationContext as? NimonsApplication
         val storedName = app?.sessionManager?.getUserName()?.trim().orEmpty()
-        if (storedName.isNotBlank()) {
-            currentUserName = storedName
+        if (storedName.isNotBlank()) currentUserName = storedName
+
+        val selectedPinId = app?.userPreferenceStore?.getSelectedPinId() ?: "avatar"
+        if (selectedPinId != "avatar") {
+            val pinFile = File(File(context.filesDir, "custom_pins"), "$selectedPinId.png")
+            if (pinFile.exists()) {
+                myCustomPinBitmap = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    android.graphics.BitmapFactory.decodeFile(pinFile.absolutePath)
+                }
+            }
         }
     }
 
@@ -265,6 +274,7 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
             myLat = state.myLat,
             myLng = state.myLng,
             myRotation = state.myRotation,
+            myCustomPinBitmap = myCustomPinBitmap,
             members = state.filteredMembers,
             favoriteLocations = state.favoriteLocations,
             onMarkerClick = {
@@ -622,6 +632,7 @@ private fun OsmMapView(
     myLat: Double,
     myLng: Double,
     myRotation: Float,
+    myCustomPinBitmap: android.graphics.Bitmap?,
     members: Map<String, MemberPresence>,
     favoriteLocations: List<FavoriteLocation>,
     onMarkerClick: (MemberPresence) -> Unit,
@@ -683,7 +694,12 @@ private fun OsmMapView(
         update = { mapView ->
             if (myLat != 0.0 || myLng != 0.0) {
                 val point = GeoPoint(myLat, myLng)
-                val icon = makeArrowDrawable(mapView.resources, Primary.toArgb(), myRotation)
+                val icon = if (myCustomPinBitmap != null) {
+                    val scaled = android.graphics.Bitmap.createScaledBitmap(myCustomPinBitmap, 96, 96, true)
+                    BitmapDrawable(mapView.resources, scaled)
+                } else {
+                    makeArrowDrawable(mapView.resources, Primary.toArgb(), myRotation)
+                }
                 if (myMarkerRef.value == null) {
                     val marker = Marker(mapView).apply {
                         position = point
