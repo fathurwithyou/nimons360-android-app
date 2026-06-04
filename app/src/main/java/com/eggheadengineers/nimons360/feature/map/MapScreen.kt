@@ -45,11 +45,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.Remove
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -140,6 +143,8 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
     var editPhotos by remember { mutableStateOf<List<ImagePayload>>(emptyList()) }
     var photoTarget by remember { mutableStateOf(MapPhotoTarget.Add) }
     var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingCameraTarget by remember { mutableStateOf<MapPhotoTarget?>(null) }
+    var notifyingMember by remember { mutableStateOf<MemberPresence?>(null) }
 
     LaunchedEffect(state.message) {
         state.message?.let {
@@ -151,12 +156,17 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
     fun appendPhoto(uri: Uri?) {
         if (uri == null) return
         coroutineScope.launch {
-            readImagePayload(context, uri).onSuccess { payload ->
-                when (photoTarget) {
-                    MapPhotoTarget.Add -> addPhotos = addPhotos + payload
-                    MapPhotoTarget.Edit -> editPhotos = editPhotos + payload
-                }
-            }
+            readImagePayload(context, uri).fold(
+                onSuccess = { payload ->
+                    when (photoTarget) {
+                        MapPhotoTarget.Add -> addPhotos = addPhotos + payload
+                        MapPhotoTarget.Edit -> editPhotos = editPhotos + payload
+                    }
+                },
+                onFailure = { error ->
+                    Toast.makeText(context, error.message ?: "Failed to load image.", Toast.LENGTH_SHORT).show()
+                },
+            )
         }
     }
 
@@ -171,16 +181,40 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
         pendingCameraUri = null
     }
 
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            val target = pendingCameraTarget ?: return@rememberLauncherForActivityResult
+            pendingCameraTarget = null
+            photoTarget = target
+            val uri = createCacheImageUri(context, "marked_location_photos", "marked_location")
+            pendingCameraUri = uri
+            cameraLauncher.launch(uri)
+        } else {
+            pendingCameraTarget = null
+            Toast.makeText(context, "Camera permission is required to take photos.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     fun pickPhoto(target: MapPhotoTarget) {
         photoTarget = target
         galleryLauncher.launch("image/*")
     }
 
     fun takePhoto(target: MapPhotoTarget) {
-        photoTarget = target
-        val uri = createCacheImageUri(context, "marked_location_photos", "marked_location")
-        pendingCameraUri = uri
-        cameraLauncher.launch(uri)
+        val hasCameraPermission = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.CAMERA,
+        ) == PackageManager.PERMISSION_GRANTED
+        if (hasCameraPermission) {
+            photoTarget = target
+            val uri = createCacheImageUri(context, "marked_location_photos", "marked_location")
+            pendingCameraUri = uri
+            cameraLauncher.launch(uri)
+        } else {
+            pendingCameraTarget = target
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
     }
 
     DisposableEffect(Unit) {
@@ -435,6 +469,7 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
                         MemberDetailCard(
                             member = member,
                             onDismiss = { viewModel.selectMember(null) },
+                            onNotify = { notifyingMember = member },
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -455,6 +490,18 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
                     }
                 }
             }
+        }
+
+        val notifyTarget = notifyingMember
+        if (notifyTarget != null) {
+            val commonFamilyId = state.families
+                .firstOrNull { family -> family.members.any { it.id == notifyTarget.userId } }
+                ?.id
+            MapNotifyBottomSheet(
+                member = notifyTarget,
+                familyId = commonFamilyId,
+                onDismiss = { notifyingMember = null },
+            )
         }
 
         if (!state.hasLocationPermission) {
@@ -835,6 +882,7 @@ private fun BoxScope.MapOverlayScrims() {
 private fun MemberDetailCard(
     member: MemberPresence,
     onDismiss: () -> Unit,
+    onNotify: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     MapInfoPanel(
@@ -843,6 +891,8 @@ private fun MemberDetailCard(
         title = member.name,
         subtitle = member.email,
         onDismiss = onDismiss,
+        actionText = "Notify",
+        onActionClick = onNotify,
         rows = listOf(
             "Battery" to buildBatteryText(member.battery, member.charging),
             "Connection" to formatConnectivityLabel(member.internetStatus),
@@ -944,6 +994,69 @@ private fun MapInfoPanel(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MapNotifyBottomSheet(
+    member: MemberPresence,
+    familyId: String?,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val sheetState = rememberModalBottomSheetState()
+    var message by rememberSaveable { mutableStateOf(mapDefaultGreetingMessage()) }
+    var isSending by remember { mutableStateOf(false) }
+
+    fun sendMessage() {
+        if (message.isBlank() || familyId == null) return
+        isSending = true
+        coroutineScope.launch {
+            val app = context.applicationContext as? NimonsApplication
+            app?.notificationRepository?.sendGreeting(familyId, member.userId, message)
+                ?.onSuccess {
+                    Toast.makeText(context, "Greeting sent!", Toast.LENGTH_SHORT).show()
+                    onDismiss()
+                }
+                ?.onFailure {
+                    Toast.makeText(context, "Failed to send greeting.", Toast.LENGTH_SHORT).show()
+                }
+            isSending = false
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        containerColor = com.eggheadengineers.nimons360.ui.theme.Surface,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = AppGrid.ScreenHorizontal)
+                .padding(bottom = AppGrid.Space8),
+            verticalArrangement = Arrangement.spacedBy(AppGrid.Space4),
+        ) {
+            AppSectionHeader(
+                title = "Notify ${member.name}",
+                subtitle = if (familyId == null) "No shared family found." else "Send a greeting message.",
+            )
+            AppTextField(
+                value = message,
+                onValueChange = { message = it },
+                label = { Text("Message") },
+                singleLine = false,
+            )
+            AppDarkButton(
+                text = if (isSending) "Sending…" else "Send",
+                onClick = { sendMessage() },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = familyId != null && message.isNotBlank() && !isSending,
+            )
+        }
+    }
+}
+
 @Composable
 private fun MapInfoRow(
     label: String,
@@ -981,6 +1094,15 @@ private fun formatConnectivityLabel(value: String): String = when (value.lowerca
     "mobile" -> "Mobile"
     "offline" -> "Offline"
     else -> value.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+}
+
+private fun mapDefaultGreetingMessage(): String {
+    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+    return when (hour) {
+        in 5..11 -> "Good Morning!"
+        in 12..17 -> "Good Afternoon!"
+        else -> "Good Night!"
+    }
 }
 
 private fun formatLastSeen(lastSeen: Long): String {
