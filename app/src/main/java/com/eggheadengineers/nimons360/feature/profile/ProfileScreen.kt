@@ -111,6 +111,16 @@ fun ProfileScreen(
         pendingCameraUri = null
     }
 
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            val uri = createProfileCameraUri(context)
+            pendingCameraUri = uri
+            cameraLauncher.launch(uri)
+        }
+    }
+
     LaunchedEffect(state.isSignedOut) {
         if (state.isSignedOut) onSignedOut()
     }
@@ -220,9 +230,16 @@ fun ProfileScreen(
             },
             onTakePhoto = {
                 showPhotoSheet = false
-                val uri = createProfileCameraUri(context)
-                pendingCameraUri = uri
-                cameraLauncher.launch(uri)
+                val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                    context, android.Manifest.permission.CAMERA,
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                if (hasCameraPermission) {
+                    val uri = createProfileCameraUri(context)
+                    pendingCameraUri = uri
+                    cameraLauncher.launch(uri)
+                } else {
+                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                }
             },
         )
     }
