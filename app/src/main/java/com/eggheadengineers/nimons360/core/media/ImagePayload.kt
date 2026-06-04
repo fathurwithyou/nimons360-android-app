@@ -17,7 +17,6 @@ data class ImagePayload(
 suspend fun readImagePayload(
     context: Context,
     uri: Uri,
-    maxBytes: Int = 500 * 1024,
 ): Result<ImagePayload> = withContext(Dispatchers.IO) {
     runCatching {
         val resolver = context.contentResolver
@@ -28,9 +27,6 @@ suspend fun readImagePayload(
 
         val bytes = resolver.openInputStream(uri)?.use { it.readBytes() }
             ?: error("Unable to open selected image.")
-        require(bytes.size <= maxBytes) {
-            "Image must be ${maxBytes / 1024} KB or smaller."
-        }
 
         ImagePayload(
             fileName = queryDisplayName(context, uri) ?: defaultImageName(mediaType),
