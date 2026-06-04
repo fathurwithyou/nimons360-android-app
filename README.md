@@ -116,11 +116,15 @@ Perbaikan:
 
 Risiko:
 
-- Auth token masih disimpan di DataStore preferences biasa.
+- Auth token tidak boleh disimpan di DataStore preferences biasa karena token adalah data sensitif.
 - Foto marked location disimpan di filesystem lokal aplikasi.
 
 Perbaikan saat ini:
 
+- Auth token disimpan di DataStore dalam bentuk ciphertext, bukan plaintext.
+- Enkripsi token memakai AES-256-GCM dengan secret key yang dibuat dan disimpan di Android Keystore (`AndroidKeyStore`), sehingga key tidak diekspor ke storage aplikasi.
+- Token legacy plaintext yang masih ada di DataStore dimigrasikan otomatis: saat `SessionManager.getToken()` membaca value yang belum bisa didekripsi, value tersebut diperlakukan sebagai token lama, dienkripsi ulang, lalu disimpan kembali sebagai ciphertext.
+- Logout menghapus ciphertext token dari DataStore.
 - Foto marked location disimpan di internal app files directory, bukan public external storage.
 - Metadata marked location disimpan di Room/SQLite.
 - Saat marked location dihapus, semua path foto terkait dihapus dari filesystem melalui repository.
@@ -128,7 +132,58 @@ Perbaikan saat ini:
 
 Sisa risiko:
 
-- Auth token belum memakai encrypted storage. Perbaikan lanjutan yang direkomendasikan adalah migrasi token dari DataStore biasa ke penyimpanan terenkripsi berbasis Android Keystore.
+- User name dan user id masih disimpan di DataStore biasa karena bukan credential utama. Jika kebijakan keamanan tim menganggap keduanya sensitif, pola yang sama dapat dipindahkan ke encrypted storage.
+
+## Responsive dan Accessibility
+
+Audit responsive dilakukan untuk screen utama berikut:
+
+- Login, Map, Family Detail, Analytics, dan Customize Pin memakai Compose dengan state input penting di `rememberSaveable` atau ViewModel.
+- Home, Browse Families, Create Family, dan Profile memiliki varian `res/layout-land` agar Android memakai resource landscape eksplisit.
+- Field login, create family, join family, edit profile, marked location, dan notification sheet diverifikasi tidak kehilangan nilai saat rotasi karena state transient sudah dipindahkan ke `rememberSaveable` atau ViewModel.
+
+Perbaikan accessibility yang diterapkan:
+
+- Tombol ikon penting memiliki `contentDescription`, termasuk back, share, QR, notification, dan profile-photo edit.
+- Target interaksi utama memakai tinggi tombol 48-52dp atau icon button 40-48dp sesuai token touch target.
+- Warna aksi tetap mengikuti sistem final: primary charcoal, surface putih, red hanya destructive, dan text secondary tidak dipakai untuk tindakan utama.
+- Before: beberapa aksi bonus belum memiliki jalur akses eksplisit di Profile/Family Detail/Map.
+- After: Analytics, Customize Pin, QR share, dan map screenshot share tersedia sebagai tombol/aksi bernama dan dapat ditemukan dari alur utama.
+
+### Accessibility Scanner Evidence
+
+Accessibility Scanner perlu dijalankan setelah fitur milestone selesai pada screen Login, Home, Families, Create Family, Family Detail, Map, Profile, Analytics, dan Customize Pin.
+
+Ringkasan suggestion sebelum perbaikan:
+
+- Beberapa tombol ikon belum memiliki label yang cukup jelas.
+- Beberapa target sentuh aksi bonus terlalu bergantung pada ikon tanpa teks.
+- Beberapa aksi baru belum dapat ditemukan dari halaman utama Profile atau Family Detail.
+
+Perbaikan yang diterapkan:
+
+- Menambahkan `contentDescription` pada ikon back, share, QR, notification, profile-photo edit, dan action penting lain.
+- Menggunakan tombol teks untuk aksi baru yang bukan ikon familiar, seperti `Export CSV`, `Download pin`, `Share downloaded pin`, dan `Share QR code`.
+- Memastikan tombol utama menggunakan tinggi 48-52dp dan icon button 40-48dp sesuai minimum touch target.
+- Mempertahankan kontras warna final design system: teks utama charcoal di atas surface putih, primary action charcoal, dan destructive action merah hanya untuk aksi destructive.
+
+Bukti screenshot Accessibility Scanner:
+
+- Before: `screenshot/accessibility-before.jpeg`
+- After: `screenshot/accessibility-after.jpeg`
+
+Jika file screenshot belum ada di folder `screenshot/`, jalankan Accessibility Scanner di device/emulator, ambil halaman suggestion sebelum dan sesudah perbaikan, lalu simpan dengan nama file di atas.
+
+## Bonus Features
+
+- Instagram Story map screenshot sharing tersedia dari panel lokasi di Map melalui aksi `Share story`.
+- Analytics tersedia dari Profile, menampilkan monthly distance average, total distance, daily distance average, active days, daily distance graph per month, recent locations, dan export CSV berisi analytics serta location history.
+- QR-code family sharing tersedia dari Family Detail untuk member family yang memiliki code.
+- Custom pin download tersedia dari Profile melalui foreground service dengan progress notification.
+
+## Firebase Configuration
+
+Firebase Messaging dependency dan Google Services plugin sudah disiapkan. Plugin `com.google.gms.google-services` hanya diterapkan ketika file asli `app/google-services.json` tersedia, sehingga build lokal tetap berhasil tanpa konfigurasi rahasia. Letakkan file Firebase yang diberikan di `app/google-services.json` sebelum menjalankan push notification end-to-end.
 
 ## Screenshot
 

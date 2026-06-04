@@ -41,16 +41,20 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.Remove
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
@@ -69,11 +73,15 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -138,6 +146,7 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
     val coroutineScope = rememberCoroutineScope()
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var currentUserName by rememberSaveable { mutableStateOf("You") }
+    var currentUserProfileImageUrl by rememberSaveable { mutableStateOf<String?>(null) }
     var myCustomPinBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
     var selectedFavorite by remember { mutableStateOf<FavoriteLocation?>(null) }
@@ -234,6 +243,7 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
         val app = context.applicationContext as? NimonsApplication
         val storedName = app?.sessionManager?.getUserName()?.trim().orEmpty()
         if (storedName.isNotBlank()) currentUserName = storedName
+        currentUserProfileImageUrl = app?.sessionManager?.getUserProfileImageUrl()
 
         val selectedPinId = app?.userPreferenceStore?.getSelectedPinId() ?: "avatar"
         if (selectedPinId != "avatar") {
@@ -302,8 +312,9 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
                     .statusBarsPadding()
                     .padding(end = AppGrid.ScreenHorizontal, top = AppGrid.Space3),
             ) {
-                AvatarCircle(
+                ProfileEntryAvatar(
                     initial = currentUserName.firstOrNull()?.uppercaseChar() ?: 'Y',
+                    imageUrl = currentUserProfileImageUrl,
                     size = 40,
                     modifier = Modifier.clickable { onProfileClick() },
                 )
@@ -595,6 +606,44 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
 }
 
 @Composable
+private fun ProfileEntryAvatar(
+    initial: Char,
+    imageUrl: String?,
+    size: Int,
+    modifier: Modifier = Modifier,
+) {
+    val resolvedImageUrl = imageUrl?.takeIf { it.isNotBlank() }?.let(::resolveProfileImageUrl)
+    if (resolvedImageUrl == null) {
+        AvatarCircle(
+            initial = initial,
+            size = size,
+            modifier = modifier,
+        )
+    } else {
+        Surface(
+            modifier = modifier
+                .size(size.dp)
+                .clip(CircleShape),
+            color = Border.copy(alpha = 0.24f),
+        ) {
+            AsyncImage(
+                model = resolvedImageUrl,
+                contentDescription = "Profile",
+                modifier = Modifier.size(size.dp),
+                contentScale = ContentScale.Crop,
+            )
+        }
+    }
+}
+
+private fun resolveProfileImageUrl(value: String): String =
+    if (value.startsWith("http://") || value.startsWith("https://")) {
+        value
+    } else {
+        "https://mad.labpro.hmif.dev/${value.removePrefix("/")}"
+    }
+
+@Composable
 private fun MyLocationCard(
     name: String,
     lat: Double,
@@ -627,8 +676,16 @@ private fun MyLocationCard(
         ),
         footer = "Lat ${"%.4f".format(lat)}   Lon ${"%.4f".format(lng)}",
         actionItems = listOf(
-            "Mark current location" to onMarkCurrentLocation,
-            "Share story" to onShareStory,
+            MapPanelAction(
+                label = "Mark current location",
+                icon = Icons.Outlined.MyLocation,
+                onClick = onMarkCurrentLocation,
+            ),
+            MapPanelAction(
+                label = "Share story",
+                icon = Icons.Outlined.Share,
+                onClick = onShareStory,
+            ),
         ),
     )
 }
@@ -942,8 +999,13 @@ private fun MemberDetailCard(
         title = member.name,
         subtitle = member.email,
         onDismiss = onDismiss,
-        actionText = "Notify",
-        onActionClick = onNotify,
+        actionItems = listOf(
+            MapPanelAction(
+                label = "Notify",
+                icon = Icons.Outlined.Share,
+                onClick = onNotify,
+            ),
+        ),
         rows = listOf(
             "Battery" to buildBatteryText(member.battery, member.charging),
             "Connection" to formatConnectivityLabel(member.internetStatus),
@@ -964,7 +1026,7 @@ private fun MapInfoPanel(
     onDismiss: (() -> Unit)? = null,
     actionText: String? = null,
     onActionClick: (() -> Unit)? = null,
-    actionItems: List<Pair<String, () -> Unit>> = emptyList(),
+    actionItems: List<MapPanelAction> = emptyList(),
 ) {
     Surface(
         modifier = modifier,
@@ -995,36 +1057,42 @@ private fun MapInfoPanel(
                         text = title,
                         style = MaterialTheme.typography.titleSmall,
                         color = TextPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(AppGrid.Space3)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                     val actions = if (actionItems.isNotEmpty()) {
                         actionItems
                     } else if (actionText != null && onActionClick != null) {
-                        listOf(actionText to onActionClick)
+                        listOf(MapPanelAction(actionText, Icons.Outlined.Share, onActionClick))
                     } else {
                         emptyList()
                     }
-                    actions.forEach { (text, action) ->
-                        Text(
-                            text = text,
-                            modifier = Modifier.clickable(onClick = action),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = Primary,
-                        )
+                    actions.forEach { action ->
+                        IconButton(onClick = action.onClick) {
+                            Icon(
+                                imageVector = action.icon,
+                                contentDescription = action.label,
+                                tint = Primary,
+                            )
+                        }
                     }
                     if (onDismiss != null) {
-                        Text(
-                            text = "Close",
-                            modifier = Modifier.clickable(onClick = onDismiss),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = TextSecondary,
-                        )
+                        IconButton(onClick = onDismiss) {
+                            Icon(
+                                imageVector = Icons.Outlined.Close,
+                                contentDescription = "Close",
+                                tint = TextSecondary,
+                            )
+                        }
                     }
                 }
             }
@@ -1055,6 +1123,12 @@ private fun MapInfoPanel(
         }
     }
 }
+
+private data class MapPanelAction(
+    val label: String,
+    val icon: ImageVector,
+    val onClick: () -> Unit,
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
