@@ -19,6 +19,7 @@ class AuthRepositoryImpl(
         sessionManager.saveToken(token)
         loginData.user?.fullName?.let { sessionManager.saveUserName(it) }
         loginData.user?.id?.let { sessionManager.saveUserId(it.toString()) }
+        sessionManager.saveUserProfileImageUrl(loginData.user?.profileImageUrl)
         token
     }
 

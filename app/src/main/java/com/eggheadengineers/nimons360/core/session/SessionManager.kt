@@ -18,6 +18,7 @@ class SessionManager(private val context: Context) {
         private val KEY_TOKEN = stringPreferencesKey("auth_token")
         private val KEY_USER_NAME = stringPreferencesKey("user_name")
         private val KEY_USER_ID = stringPreferencesKey("user_id")
+        private val KEY_USER_PROFILE_IMAGE_URL = stringPreferencesKey("user_profile_image_url")
     }
 
     suspend fun saveToken(token: String) {
@@ -53,4 +54,17 @@ class SessionManager(private val context: Context) {
 
     suspend fun getUserId(): String? =
         context.dataStore.data.map { it[KEY_USER_ID] }.first()
+
+    suspend fun saveUserProfileImageUrl(url: String?) {
+        context.dataStore.edit {
+            if (url.isNullOrBlank()) {
+                it.remove(KEY_USER_PROFILE_IMAGE_URL)
+            } else {
+                it[KEY_USER_PROFILE_IMAGE_URL] = url
+            }
+        }
+    }
+
+    suspend fun getUserProfileImageUrl(): String? =
+        context.dataStore.data.map { it[KEY_USER_PROFILE_IMAGE_URL] }.first()
 }
