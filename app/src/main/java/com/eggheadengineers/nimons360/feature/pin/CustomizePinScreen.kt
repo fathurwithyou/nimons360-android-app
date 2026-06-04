@@ -1,32 +1,29 @@
 package com.eggheadengineers.nimons360.feature.pin
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,19 +40,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.eggheadengineers.nimons360.NimonsApplication
 import com.eggheadengineers.nimons360.core.pin.CustomPinDownloadService
-import com.eggheadengineers.nimons360.ui.components.AppCard
 import com.eggheadengineers.nimons360.ui.components.AppGrid
 import com.eggheadengineers.nimons360.ui.components.AppTopBar
-import com.eggheadengineers.nimons360.ui.theme.Background
+import com.eggheadengineers.nimons360.ui.theme.Border
 import com.eggheadengineers.nimons360.ui.theme.Primary
-import com.eggheadengineers.nimons360.ui.theme.PrimaryDark
-import com.eggheadengineers.nimons360.ui.theme.PrimaryLight
+import com.eggheadengineers.nimons360.ui.theme.Surface as AppSurface
 import com.eggheadengineers.nimons360.ui.theme.TextPrimary
 import com.eggheadengineers.nimons360.ui.theme.TextSecondary
 import kotlinx.coroutines.delay
@@ -130,100 +123,58 @@ fun CustomizePinScreen(onBack: () -> Unit) {
 
     val selectedSkin = PIN_SKINS.firstOrNull { it.id == selectedPinId } ?: PIN_SKINS.first()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Background)
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = AppGrid.ScreenHorizontal)
-            .padding(bottom = AppGrid.Space8),
-        verticalArrangement = Arrangement.spacedBy(AppGrid.Space4),
-    ) {
-        AppTopBar(
-            title = "Customize Pin",
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
-                }
-            },
-        )
-
-        // Current pin preview
-        AppCard {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = AppGrid.Space4),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(AppGrid.Space3),
-            ) {
-                Text(
-                    text = "YOUR CURRENT PIN",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TextSecondary,
-                    letterSpacing = 1.sp,
-                )
-                if (selectedSkin.url == null) {
-                    Surface(
-                        modifier = Modifier.size(64.dp),
-                        shape = CircleShape,
-                        color = Primary,
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = userInitial,
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
+    Scaffold(
+        containerColor = AppSurface,
+        topBar = {
+            AppTopBar(
+                title = "Customize Pin",
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = "Back",
+                            tint = TextPrimary,
+                        )
                     }
-                } else {
-                    val file = pinFileFor(selectedSkin)
-                    AsyncImage(
-                        model = file ?: selectedSkin.url,
-                        contentDescription = selectedSkin.displayName,
-                        modifier = Modifier.size(64.dp),
-                        contentScale = ContentScale.Fit,
-                    )
-                }
-                Text(
-                    text = "Appears on your map",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
+                },
+            )
+        },
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(AppSurface)
+                .padding(top = innerPadding.calculateTopPadding())
+                .padding(horizontal = AppGrid.ScreenHorizontal),
+            contentPadding = PaddingValues(bottom = AppGrid.Space8),
+            verticalArrangement = Arrangement.spacedBy(AppGrid.Space5),
+        ) {
+            item {
+                CurrentPinSection(
+                    skin = selectedSkin,
+                    userInitial = userInitial,
+                    pinFile = pinFileFor(selectedSkin),
                 )
             }
-        }
-
-        // Skin grid
-        Text(
-            text = "Choose a Skin",
-            style = MaterialTheme.typography.titleMedium,
-            color = TextPrimary,
-            fontWeight = FontWeight.SemiBold,
-        )
-
-        val rows = PIN_SKINS.chunked(3)
-        Column(verticalArrangement = Arrangement.spacedBy(AppGrid.Space3)) {
-            rows.forEach { row ->
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(AppGrid.Space3),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    row.forEach { skin ->
+            item {
+                SectionHeader(
+                    title = "Available pins",
+                    subtitle = "Choose a downloaded pin or download a new one.",
+                )
+            }
+            item {
+                Column {
+                    PIN_SKINS.forEachIndexed { index, skin ->
                         val isSelected = skin.id == selectedPinId
                         val isDownloaded = skin.id in downloadedIds
                         val isDownloading = skin.id in downloadingIds
-                        PinSkinCell(
+                        PinSkinRow(
                             skin = skin,
                             isSelected = isSelected,
                             isDownloaded = isDownloaded,
                             isDownloading = isDownloading,
                             userInitial = userInitial,
                             pinFile = pinFileFor(skin),
-                            modifier = Modifier.weight(1f),
                             onClick = {
                                 when {
                                     isDownloaded -> selectPin(skin.id)
@@ -231,8 +182,12 @@ fun CustomizePinScreen(onBack: () -> Unit) {
                                 }
                             },
                         )
+                        if (index != PIN_SKINS.lastIndex) {
+                            HorizontalDivider(
+                                color = Border.copy(alpha = 0.44f),
+                            )
+                        }
                     }
-                    repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
         }
@@ -240,112 +195,188 @@ fun CustomizePinScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun PinSkinCell(
+private fun CurrentPinSection(
+    skin: PinSkin,
+    userInitial: String,
+    pinFile: File?,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppGrid.Space4)) {
+        SectionHeader(
+            title = "Current pin",
+            subtitle = "This marker appears on your live map.",
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = AppGrid.Space1),
+            horizontalArrangement = Arrangement.spacedBy(AppGrid.Space4),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            PinPreview(
+                skin = skin,
+                userInitial = userInitial,
+                pinFile = pinFile,
+                size = 72,
+            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(AppGrid.Space1),
+            ) {
+                Text(
+                    text = "Current map pin",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary,
+                )
+                Text(
+                    text = skin.displayName,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(
+    title: String,
+    subtitle: String,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            color = TextPrimary,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = TextSecondary,
+        )
+    }
+}
+
+@Composable
+private fun PinSkinRow(
     skin: PinSkin,
     isSelected: Boolean,
     isDownloaded: Boolean,
     isDownloading: Boolean,
     userInitial: String,
     pinFile: File?,
-    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    val borderColor = if (isSelected) Primary else Color.Transparent
-    val borderWidth = if (isSelected) 2.dp else 0.dp
-
-    Surface(
-        modifier = modifier
-            .aspectRatio(0.85f)
-            .clip(RoundedCornerShape(16.dp))
-            .border(borderWidth, borderColor, RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        color = if (isSelected) PrimaryLight.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface,
-        shadowElevation = 2.dp,
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = AppGrid.Space3),
+        horizontalArrangement = Arrangement.spacedBy(AppGrid.Space3),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(AppGrid.Space2),
-                modifier = Modifier.padding(AppGrid.Space2),
+        PinPreview(
+            skin = skin,
+            userInitial = userInitial,
+            pinFile = if (isDownloaded) pinFile else null,
+            size = 48,
+            showPlaceholder = !isDownloaded && skin.url != null,
+        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = skin.displayName,
+                style = MaterialTheme.typography.titleSmall,
+                color = TextPrimary,
+            )
+            Text(
+                text = when {
+                    isSelected -> "Selected"
+                    isDownloaded -> "Ready to use"
+                    isDownloading -> "Downloading"
+                    else -> "Download required"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+            )
+        }
+        when {
+            isDownloading -> CircularProgressIndicator(
+                modifier = Modifier.size(28.dp),
+                strokeWidth = 3.dp,
+                color = Primary,
+            )
+            isSelected -> Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .background(Primary, CircleShape),
+                contentAlignment = Alignment.Center,
             ) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    when {
-                        skin.url == null -> {
-                            // Avatar — always show initials circle
-                            Surface(
-                                modifier = Modifier.size(48.dp),
-                                shape = CircleShape,
-                                color = Primary,
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = userInitial,
-                                        style = MaterialTheme.typography.titleLarge,
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                    )
-                                }
-                            }
-                        }
-                        isDownloading -> {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(32.dp),
-                                strokeWidth = 3.dp,
-                                color = Primary,
-                            )
-                        }
-                        isDownloaded -> {
-                            AsyncImage(
-                                model = pinFile ?: skin.url,
-                                contentDescription = skin.displayName,
-                                modifier = Modifier.size(52.dp),
-                                contentScale = ContentScale.Fit,
-                            )
-                        }
-                        else -> {
-                            // Not downloaded
-                            Icon(
-                                imageVector = Icons.Outlined.FileDownload,
-                                contentDescription = "Download ${skin.displayName}",
-                                modifier = Modifier.size(32.dp),
-                                tint = TextSecondary,
-                            )
-                        }
-                    }
-                }
-                Text(
-                    text = skin.displayName,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (isDownloaded || skin.url == null) TextPrimary else TextSecondary,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
+                Icon(
+                    imageVector = Icons.Outlined.Check,
+                    contentDescription = "Selected",
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp),
                 )
             }
+            !isDownloaded -> IconButton(onClick = onClick) {
+                Icon(
+                    imageVector = Icons.Outlined.FileDownload,
+                    contentDescription = "Download ${skin.displayName}",
+                    tint = TextSecondary,
+                )
+            }
+        }
+    }
+}
 
-            // Checkmark for selected
-            if (isSelected) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(6.dp)
-                        .size(20.dp)
-                        .background(Primary, CircleShape),
-                    contentAlignment = Alignment.Center,
+@Composable
+private fun PinPreview(
+    skin: PinSkin,
+    userInitial: String,
+    pinFile: File?,
+    size: Int,
+    showPlaceholder: Boolean = false,
+) {
+    Box(
+        modifier = Modifier
+            .size(size.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(Border.copy(alpha = 0.18f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        when {
+            skin.url == null -> {
+                Surface(
+                    modifier = Modifier.size((size * 0.72f).dp),
+                    shape = CircleShape,
+                    color = Primary,
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Check,
-                        contentDescription = "Selected",
-                        tint = Color.White,
-                        modifier = Modifier.size(12.dp),
-                    )
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = userInitial,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                 }
             }
+            showPlaceholder -> Icon(
+                imageVector = Icons.Outlined.FileDownload,
+                contentDescription = null,
+                modifier = Modifier.size((size * 0.42f).dp),
+                tint = TextSecondary,
+            )
+            else -> AsyncImage(
+                model = pinFile ?: skin.url,
+                contentDescription = skin.displayName,
+                modifier = Modifier.size((size * 0.72f).dp),
+                contentScale = ContentScale.Fit,
+            )
         }
     }
 }
