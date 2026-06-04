@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -28,6 +27,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -45,8 +45,10 @@ import com.eggheadengineers.nimons360.core.share.writeShareFile
 import com.eggheadengineers.nimons360.domain.model.FavoriteLocation
 import com.eggheadengineers.nimons360.ui.components.AppDarkButton
 import com.eggheadengineers.nimons360.ui.components.AppGrid
+import com.eggheadengineers.nimons360.ui.components.AppTopBar
 import com.eggheadengineers.nimons360.ui.theme.Background
 import com.eggheadengineers.nimons360.ui.theme.Border
+import com.eggheadengineers.nimons360.ui.theme.Surface
 import com.eggheadengineers.nimons360.ui.theme.TextPrimary
 import com.eggheadengineers.nimons360.ui.theme.TextSecondary
 import java.nio.charset.StandardCharsets
@@ -62,110 +64,106 @@ fun AnalyticsScreen(
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Background)
-            .statusBarsPadding()
-            .padding(horizontal = AppGrid.ScreenHorizontal),
-        contentPadding = PaddingValues(bottom = AppGrid.Space8),
-        verticalArrangement = Arrangement.spacedBy(AppGrid.Space4),
-    ) {
-        item {
-            AnalyticsHeader(onBack)
-        }
-        item {
-            MonthlyHighlightSection(
-                monthLabel = monthLabel(state.selectedMonthKey),
-                monthlyDistanceKm = state.selectedMonthTotalKm,
-                dailyAverageKm = state.dailyDistanceAverageKm,
-                activeDays = state.activeDays,
-            )
-        }
-        item {
-            MetricList(
-                rows = listOf(
-                    MetricRowModel(Icons.Outlined.Route, "Total distance", formatKm(state.totalDistanceKm)),
-                    MetricRowModel(Icons.Outlined.Timeline, "Monthly distance avg", formatKm(state.monthlyDistanceAverageKm)),
-                    MetricRowModel(Icons.Outlined.CalendarMonth, "Daily distance avg", formatKm(state.dailyDistanceAverageKm)),
-                    MetricRowModel(Icons.Outlined.LocalFireDepartment, "Active days", state.activeDays.toString()),
-                    MetricRowModel(Icons.Outlined.LocationOn, "Marked locations", state.locations.size.toString()),
-                    MetricRowModel(Icons.Outlined.PhotoLibrary, "Photos", state.photoCount.toString()),
-                ),
-            )
-        }
-        item {
-            DistanceGraphSection(
-                monthLabel = monthLabel(state.selectedMonthKey),
-                values = state.selectedMonthDailyDistances,
-            )
-        }
-        item {
-            AppDarkButton(
-                text = "Export to CSV",
-                onClick = {
-                    val uri = writeShareFile(
-                        context = context,
-                        fileName = "nimons360-analytics.csv",
-                        bytes = analyticsCsv(state).toByteArray(StandardCharsets.UTF_8),
-                    )
-                    val intent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/csv"
-                        putExtra(Intent.EXTRA_STREAM, uri)
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    Scaffold(
+        containerColor = Surface,
+        topBar = {
+            AppTopBar(
+                title = "Analytics",
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = "Back",
+                            tint = TextPrimary,
+                        )
                     }
-                    context.startActivity(Intent.createChooser(intent, "Export analytics CSV"))
                 },
-                modifier = Modifier.fillMaxWidth(),
             )
-        }
-        item {
-            SectionHeader(
-                title = "Recent locations",
-                subtitle = "Latest marked places from your local history.",
-            )
-        }
-        if (state.recentLocations.isEmpty()) {
+        },
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Surface)
+                .padding(top = innerPadding.calculateTopPadding())
+                .padding(horizontal = AppGrid.ScreenHorizontal),
+            contentPadding = PaddingValues(bottom = AppGrid.Space8),
+            verticalArrangement = Arrangement.spacedBy(AppGrid.Space4),
+        ) {
             item {
-                Text(
-                    text = "No marked locations yet.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary,
-                    modifier = Modifier.padding(vertical = AppGrid.Space3),
+                MonthlyHighlightSection(
+                    monthLabel = monthLabel(state.selectedMonthKey),
+                    monthlyDistanceKm = state.selectedMonthTotalKm,
+                    dailyAverageKm = state.dailyDistanceAverageKm,
+                    activeDays = state.activeDays,
                 )
             }
-        } else {
             item {
-                Column {
-                    state.recentLocations.forEachIndexed { index, location ->
-                        RecentLocationRow(location)
-                        if (index != state.recentLocations.lastIndex) {
-                            HorizontalDivider(color = Border.copy(alpha = 0.44f))
+                MetricGrid(
+                    rows = listOf(
+                        MetricRowModel(Icons.Outlined.Route, "Total distance", formatKm(state.totalDistanceKm)),
+                        MetricRowModel(Icons.Outlined.Timeline, "Monthly distance avg", formatKm(state.monthlyDistanceAverageKm)),
+                        MetricRowModel(Icons.Outlined.CalendarMonth, "Daily distance avg", formatKm(state.dailyDistanceAverageKm)),
+                        MetricRowModel(Icons.Outlined.LocalFireDepartment, "Active days", state.activeDays.toString()),
+                        MetricRowModel(Icons.Outlined.LocationOn, "Marked locations", state.locations.size.toString()),
+                        MetricRowModel(Icons.Outlined.PhotoLibrary, "Photos", state.photoCount.toString()),
+                    ),
+                )
+            }
+            item {
+                DistanceGraphSection(
+                    monthLabel = monthLabel(state.selectedMonthKey),
+                    values = state.selectedMonthDailyDistances,
+                )
+            }
+            item {
+                AppDarkButton(
+                    text = "Export to CSV",
+                    onClick = {
+                        val uri = writeShareFile(
+                            context = context,
+                            fileName = "nimons360-analytics.csv",
+                            bytes = analyticsCsv(state).toByteArray(StandardCharsets.UTF_8),
+                        )
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/csv"
+                            putExtra(Intent.EXTRA_STREAM, uri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        context.startActivity(Intent.createChooser(intent, "Export analytics CSV"))
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            item {
+                SectionHeader(
+                    icon = Icons.Outlined.LocationOn,
+                    title = "Recent locations",
+                    subtitle = "Latest marked places from your local history.",
+                )
+            }
+            if (state.recentLocations.isEmpty()) {
+                item {
+                    Text(
+                        text = "No marked locations yet.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary,
+                        modifier = Modifier.padding(vertical = AppGrid.Space3),
+                    )
+                }
+            } else {
+                item {
+                    Column {
+                        state.recentLocations.forEachIndexed { index, location ->
+                            RecentLocationRow(location)
+                            if (index != state.recentLocations.lastIndex) {
+                                HorizontalDivider(color = Border.copy(alpha = 0.44f))
+                            }
                         }
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun AnalyticsHeader(onBack: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = AppGrid.Space2, bottom = AppGrid.Space1),
-        horizontalArrangement = Arrangement.spacedBy(AppGrid.Space2),
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-    ) {
-        IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", tint = TextPrimary)
-        }
-        Text(
-            text = "Analytics",
-            style = MaterialTheme.typography.headlineSmall,
-            color = TextPrimary,
-        )
     }
 }
 
@@ -181,6 +179,7 @@ private fun MonthlyHighlightSection(
         verticalArrangement = Arrangement.spacedBy(AppGrid.Space4),
     ) {
         SectionHeader(
+            icon = Icons.Outlined.CalendarMonth,
             title = "This month",
             subtitle = monthLabel,
         )
@@ -196,8 +195,8 @@ private fun MonthlyHighlightSection(
                 verticalArrangement = Arrangement.spacedBy(AppGrid.Space1),
             ) {
                 Text(
-                    text = monthLabel.uppercase(Locale.US),
-                    style = MaterialTheme.typography.labelMedium,
+                    text = "Monthly distance",
+                    style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
                 )
                 Text(
@@ -207,7 +206,7 @@ private fun MonthlyHighlightSection(
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    text = "${formatKm(dailyAverageKm)}/day • $activeDays active days",
+                    text = "${formatKm(dailyAverageKm)}/day",
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
                 )
@@ -227,21 +226,83 @@ private fun MonthlyHighlightSection(
                 )
             }
         }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(AppGrid.Space3),
+        ) {
+            CompactStat(
+                icon = Icons.Outlined.LocalFireDepartment,
+                value = activeDays.toString(),
+                label = "Active days",
+                modifier = Modifier.weight(1f),
+            )
+            CompactStat(
+                icon = Icons.Outlined.CalendarMonth,
+                value = monthLabel,
+                label = "Period",
+                modifier = Modifier.weight(1f),
+            )
+        }
     }
 }
 
 @Composable
-private fun MetricList(rows: List<MetricRowModel>) {
+private fun CompactStat(
+    icon: ImageVector,
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(Border.copy(alpha = 0.18f))
+            .padding(horizontal = AppGrid.Space3, vertical = AppGrid.Space2),
+        horizontalArrangement = Arrangement.spacedBy(AppGrid.Space2),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = TextPrimary,
+            modifier = Modifier.size(18.dp),
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.labelLarge,
+                color = TextPrimary,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun MetricGrid(rows: List<MetricRowModel>) {
     Column(verticalArrangement = Arrangement.spacedBy(AppGrid.Space3)) {
         SectionHeader(
+            icon = Icons.Outlined.Timeline,
             title = "Overview",
             subtitle = "Distance and activity summary.",
         )
-        Column {
-            rows.forEachIndexed { index, row ->
-                MetricListRow(row)
-                if (index != rows.lastIndex) {
-                    HorizontalDivider(color = Border.copy(alpha = 0.44f))
+        Column(verticalArrangement = Arrangement.spacedBy(AppGrid.Space3)) {
+            rows.chunked(2).forEach { pair ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(AppGrid.Space3),
+                ) {
+                    pair.forEach { row ->
+                        MetricTile(row = row, modifier = Modifier.weight(1f))
+                    }
+                    if (pair.size == 1) {
+                        Box(modifier = Modifier.weight(1f))
+                    }
                 }
             }
         }
@@ -249,19 +310,20 @@ private fun MetricList(rows: List<MetricRowModel>) {
 }
 
 @Composable
-private fun MetricListRow(row: MetricRowModel) {
-    Row(
-        modifier = Modifier
+private fun MetricTile(row: MetricRowModel, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = AppGrid.Space3),
-        horizontalArrangement = Arrangement.spacedBy(AppGrid.Space3),
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            .clip(RoundedCornerShape(18.dp))
+            .background(Border.copy(alpha = 0.18f))
+            .padding(AppGrid.Space3),
+        verticalArrangement = Arrangement.spacedBy(AppGrid.Space3),
     ) {
         Box(
             modifier = Modifier
-                .size(38.dp)
+                .size(36.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Border.copy(alpha = 0.20f)),
+                .background(Background),
             contentAlignment = androidx.compose.ui.Alignment.Center,
         ) {
             Icon(
@@ -271,18 +333,19 @@ private fun MetricListRow(row: MetricRowModel) {
                 modifier = Modifier.size(20.dp),
             )
         }
-        Text(
-            text = row.label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary,
-            modifier = Modifier.weight(1f),
-        )
-        Text(
-            text = row.value,
-            style = MaterialTheme.typography.titleSmall,
-            color = TextPrimary,
-            fontWeight = FontWeight.SemiBold,
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = row.value,
+                style = MaterialTheme.typography.titleLarge,
+                color = TextPrimary,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = row.label,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+            )
+        }
     }
 }
 
@@ -294,21 +357,42 @@ private data class MetricRowModel(
 
 @Composable
 private fun SectionHeader(
+    icon: ImageVector,
     title: String,
     subtitle: String,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            color = TextPrimary,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Text(
-            text = subtitle,
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary,
-        )
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(AppGrid.Space3),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Border.copy(alpha = 0.18f)),
+            contentAlignment = androidx.compose.ui.Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = TextPrimary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                color = TextPrimary,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+            )
+        }
     }
 }
 
@@ -319,6 +403,7 @@ private fun DistanceGraphSection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(AppGrid.Space3)) {
         SectionHeader(
+            icon = Icons.Outlined.Route,
             title = "Daily distance",
             subtitle = monthLabel,
         )
