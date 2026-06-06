@@ -1386,18 +1386,22 @@ private fun AddFavoritePanel(
                 onTakePhoto = onTakePhoto,
             )
 
-            AppSecondaryButton(
-                text = "Open Google Maps",
-                onClick = onNavigate,
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-            )
-
-            AppDarkButton(
-                text = "Save marked location",
-                onClick = { if (name.isNotBlank()) onConfirm(name.trim(), description.trim()) },
-                enabled = name.isNotBlank(),
-                modifier = Modifier.fillMaxWidth(),
-            )
+                horizontalArrangement = Arrangement.spacedBy(AppGrid.Space3),
+            ) {
+                AppSecondaryButton(
+                    text = "Open Maps",
+                    onClick = onNavigate,
+                    modifier = Modifier.weight(1f),
+                )
+                AppDarkButton(
+                    text = "Save location",
+                    onClick = { if (name.isNotBlank()) onConfirm(name.trim(), description.trim()) },
+                    enabled = name.isNotBlank(),
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }
@@ -1465,17 +1469,21 @@ private fun FavoriteDetailPanel(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            AppDarkButton(
-                text = "Edit marked location",
-                onClick = onEdit,
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-            )
-
-            AppDestructiveButton(
-                text = "Delete marked location",
-                onClick = onDelete,
-                modifier = Modifier.fillMaxWidth(),
-            )
+                horizontalArrangement = Arrangement.spacedBy(AppGrid.Space3),
+            ) {
+                AppDarkButton(
+                    text = "Edit",
+                    onClick = onEdit,
+                    modifier = Modifier.weight(1f),
+                )
+                AppDestructiveButton(
+                    text = "Delete",
+                    onClick = onDelete,
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }
