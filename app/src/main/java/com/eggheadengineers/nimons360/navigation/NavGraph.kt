@@ -95,10 +95,7 @@ fun NimonsNavGraph(
                     app.userPreferenceStore,
                 )
             )
-            MapScreen(
-                viewModel = vm,
-                onProfileClick = { navController.navigate(Screen.Profile.route) },
-            )
+            MapScreen(viewModel = vm)
         }
 
         composable(Screen.Families.route) {

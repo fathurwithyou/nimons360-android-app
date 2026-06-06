@@ -142,7 +142,7 @@ private enum class MapPhotoTarget {
 }
 
 @Composable
-fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
+fun MapScreen(viewModel: MapViewModel) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val isLandscape = LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
@@ -314,22 +314,6 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
 
         MapOverlayScrims()
 
-        if (!isLandscape) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .statusBarsPadding()
-                    .padding(end = AppGrid.ScreenHorizontal, top = AppGrid.Space3),
-            ) {
-                ProfileEntryAvatar(
-                    initial = currentUserName.firstOrNull()?.uppercaseChar() ?: 'Y',
-                    imageUrl = currentUserProfileImageUrl,
-                    size = 40,
-                    modifier = Modifier.clickable { onProfileClick() },
-                )
-            }
-        }
-
         Column(
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -337,7 +321,7 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
                 .padding(
                     start = AppGrid.ScreenHorizontal,
                     top = AppGrid.Space3,
-                    end = AppGrid.ScreenHorizontal + if (isLandscape) 0.dp else 52.dp,
+                    end = AppGrid.ScreenHorizontal,
                 ),
             verticalArrangement = Arrangement.spacedBy(AppGrid.Space3),
         ) {
