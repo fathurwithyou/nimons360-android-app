@@ -48,8 +48,10 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.MyLocation
+import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -1612,12 +1614,46 @@ private fun PhotoAttachmentRow(
                 text = "Gallery",
                 onClick = onAddPhotoFromGallery,
                 modifier = Modifier.weight(1f),
-            )
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(AppGrid.Space2),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.PhotoLibrary,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = TextPrimary,
+                    )
+                    Text(
+                        text = "Gallery",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = TextPrimary,
+                    )
+                }
+            }
             AppSecondaryButton(
                 text = "Camera",
                 onClick = onTakePhoto,
                 modifier = Modifier.weight(1f),
-            )
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(AppGrid.Space2),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.CameraAlt,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = TextPrimary,
+                    )
+                    Text(
+                        text = "Camera",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = TextPrimary,
+                    )
+                }
+            }
         }
     }
 }

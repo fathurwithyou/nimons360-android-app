@@ -939,6 +939,7 @@ fun AppSecondaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    content: (@Composable () -> Unit)? = null,
 ) {
     val palette = lightButtonPalette()
     SoftButton(
@@ -955,7 +956,7 @@ fun AppSecondaryButton(
         shadowColor = palette.shadowColor,
         contentColor = palette.contentColor,
     ) {
-        Text(
+        content?.invoke() ?: Text(
             text = text,
             style = MaterialTheme.typography.labelLarge,
             color = palette.contentColor,
