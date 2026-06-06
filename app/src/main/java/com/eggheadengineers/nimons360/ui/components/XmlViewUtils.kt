@@ -17,6 +17,7 @@ import androidx.core.view.doOnAttach
 import androidx.core.view.updatePadding
 import com.eggheadengineers.nimons360.R
 import coil.load
+import coil.request.CachePolicy
 
 private data class ViewPadding(
     val left: Int,
@@ -119,6 +120,20 @@ fun ImageView.loadUrl(
         placeholder(placeholderResId)
         error(placeholderResId)
         fallback(placeholderResId)
+    }
+}
+
+fun ImageView.loadMemberProfileUrl(
+    url: String?,
+    placeholderResId: Int = R.drawable.bg_xml_avatar_circle,
+) {
+    load(url) {
+        crossfade(true)
+        placeholder(placeholderResId)
+        error(placeholderResId)
+        fallback(placeholderResId)
+        memoryCachePolicy(CachePolicy.DISABLED)
+        diskCachePolicy(CachePolicy.DISABLED)
     }
 }
 

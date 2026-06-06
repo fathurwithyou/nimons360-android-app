@@ -26,7 +26,7 @@ private fun bindMemberAvatar(member: FamilyMember?, initialView: TextView, image
     imageView.isVisible = member != null && imageUrl != null
     initialView.text = member?.name?.firstOrNull()?.uppercaseChar()?.toString().orEmpty()
     if (imageUrl != null) {
-        imageView.loadUrl(imageUrl, placeholderResId = R.drawable.bg_xml_avatar_circle)
+        imageView.loadMemberProfileUrl(imageUrl)
     } else {
         imageView.setImageDrawable(null)
     }

@@ -56,7 +56,9 @@ fun HomeScreen(
 
     LaunchedEffect(Unit) {
         val app = context.applicationContext as? NimonsApplication
-        profileImageUrl = app?.sessionManager?.getUserProfileImageUrl()
+        app?.sessionManager?.observeProfileImageUrl()?.collect { url ->
+            profileImageUrl = url
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {

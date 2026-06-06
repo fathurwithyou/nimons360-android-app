@@ -92,4 +92,8 @@ class FamilyRepositoryImpl(
         dao.observeIds().map { it.toSet() }
 
     override fun observeFamilyChanges(): Flow<Unit> = familyChanges
+
+    override fun notifyMemberChanged() {
+        familyChanges.tryEmit(Unit)
+    }
 }

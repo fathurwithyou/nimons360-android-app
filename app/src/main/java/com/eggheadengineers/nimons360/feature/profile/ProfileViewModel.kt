@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import com.eggheadengineers.nimons360.NimonsApplication
 import com.eggheadengineers.nimons360.core.notifications.NotificationTokenSync
 import com.eggheadengineers.nimons360.core.presence.PresenceLocationService
 import com.eggheadengineers.nimons360.core.preferences.UserPreferenceStore
@@ -50,9 +51,15 @@ class ProfileViewModel(
         viewModelScope.launch {
             _uiState.value = uiState.value.copy(isLoading = true, error = null)
             profileRepository.getProfile().fold(
-                onSuccess = {
-                    sessionManager.saveUserProfileImageUrl(it.profileImageUrl)
-                    _uiState.value = uiState.value.copy(profile = it, isLoading = false)
+                onSuccess = { serverProfile ->
+                    sessionManager.saveUserProfileImageUrl(serverProfile.profileImageUrl)
+                    val uploadedUrl = sessionManager.getUploadedProfileImageUrl()
+                    val profile = if (!uploadedUrl.isNullOrBlank()) {
+                        serverProfile.copy(profileImageUrl = uploadedUrl)
+                    } else {
+                        serverProfile
+                    }
+                    _uiState.value = uiState.value.copy(profile = profile, isLoading = false)
                 },
                 onFailure = {
                     _uiState.value = uiState.value.copy(
@@ -76,6 +83,7 @@ class ProfileViewModel(
                 onSuccess = { updated ->
                     sessionManager.saveUserName(updated.name)
                     sessionManager.saveUserProfileImageUrl(updated.profileImageUrl)
+                    (appContext as? NimonsApplication)?.familyRepository?.notifyMemberChanged()
                     _uiState.value = uiState.value.copy(
                         profile = updated,
                         isLoading = false,
@@ -97,9 +105,11 @@ class ProfileViewModel(
             _uiState.value = uiState.value.copy(isLoading = true, error = null)
             profileRepository.uploadPhoto(fileName, bytes, mediaType).fold(
                 onSuccess = { updated ->
+                    val versionedUrl = updated.profileImageUrl?.let { "$it?v=${System.currentTimeMillis()}" }
                     sessionManager.saveUserProfileImageUrl(updated.profileImageUrl)
+                    sessionManager.saveUploadedProfileImageUrl(versionedUrl)
                     _uiState.value = uiState.value.copy(
-                        profile = updated,
+                        profile = updated.copy(profileImageUrl = versionedUrl ?: updated.profileImageUrl),
                         isLoading = false,
                         updateMessage = "Your profile photo has been updated.",
                     )

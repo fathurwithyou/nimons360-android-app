@@ -87,6 +87,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import com.eggheadengineers.nimons360.NimonsApplication
 import com.eggheadengineers.nimons360.core.media.ImagePayload
 import com.eggheadengineers.nimons360.core.media.createCacheImageUri
@@ -240,11 +242,17 @@ fun MapScreen(viewModel: MapViewModel, onProfileClick: () -> Unit = {}) {
         }
     }
 
+    LaunchedEffect(Unit) {
+        val app = context.applicationContext as? NimonsApplication
+        app?.sessionManager?.observeProfileImageUrl()?.collect { url ->
+            currentUserProfileImageUrl = url
+        }
+    }
+
     LaunchedEffect(context) {
         val app = context.applicationContext as? NimonsApplication
         val storedName = app?.sessionManager?.getUserName()?.trim().orEmpty()
         if (storedName.isNotBlank()) currentUserName = storedName
-        currentUserProfileImageUrl = app?.sessionManager?.getUserProfileImageUrl()
 
         val selectedPinId = app?.userPreferenceStore?.getSelectedPinId() ?: "avatar"
         if (selectedPinId != "avatar") {
@@ -629,7 +637,11 @@ private fun ProfileEntryAvatar(
             color = Border.copy(alpha = 0.24f),
         ) {
             AsyncImage(
-                model = resolvedImageUrl,
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(resolvedImageUrl)
+                    .memoryCachePolicy(CachePolicy.DISABLED)
+                    .diskCachePolicy(CachePolicy.DISABLED)
+                    .build(),
                 contentDescription = "Profile",
                 modifier = Modifier.size(size.dp),
                 contentScale = ContentScale.Crop,

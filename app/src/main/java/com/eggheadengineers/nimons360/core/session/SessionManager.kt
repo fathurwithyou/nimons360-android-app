@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
@@ -19,6 +20,8 @@ class SessionManager(private val context: Context) {
         private val KEY_USER_NAME = stringPreferencesKey("user_name")
         private val KEY_USER_ID = stringPreferencesKey("user_id")
         private val KEY_USER_PROFILE_IMAGE_URL = stringPreferencesKey("user_profile_image_url")
+        private val KEY_UPLOADED_PHOTO_URL = stringPreferencesKey("user_uploaded_photo_url")
+        private val KEY_UPLOADED_PHOTO_OWNER = stringPreferencesKey("user_uploaded_photo_owner")
     }
 
     suspend fun saveToken(token: String) {
@@ -66,5 +69,34 @@ class SessionManager(private val context: Context) {
     }
 
     suspend fun getUserProfileImageUrl(): String? =
-        context.dataStore.data.map { it[KEY_USER_PROFILE_IMAGE_URL] }.first()
+        context.dataStore.data.map { prefs ->
+            prefs.effectiveUploadedUrl() ?: prefs[KEY_USER_PROFILE_IMAGE_URL]
+        }.first()
+
+    suspend fun saveUploadedProfileImageUrl(url: String?) {
+        val userId = getUserId()
+        context.dataStore.edit {
+            if (url.isNullOrBlank() || userId == null) {
+                it.remove(KEY_UPLOADED_PHOTO_URL)
+                it.remove(KEY_UPLOADED_PHOTO_OWNER)
+            } else {
+                it[KEY_UPLOADED_PHOTO_URL] = url
+                it[KEY_UPLOADED_PHOTO_OWNER] = userId
+            }
+        }
+    }
+
+    suspend fun getUploadedProfileImageUrl(): String? =
+        context.dataStore.data.map { it.effectiveUploadedUrl() }.first()
+
+    fun observeProfileImageUrl(): Flow<String?> =
+        context.dataStore.data.map { prefs ->
+            prefs.effectiveUploadedUrl() ?: prefs[KEY_USER_PROFILE_IMAGE_URL]
+        }
+
+    private fun Preferences.effectiveUploadedUrl(): String? {
+        val owner = this[KEY_UPLOADED_PHOTO_OWNER]
+        val currentUserId = this[KEY_USER_ID]
+        return if (owner != null && owner == currentUserId) this[KEY_UPLOADED_PHOTO_URL] else null
+    }
 }

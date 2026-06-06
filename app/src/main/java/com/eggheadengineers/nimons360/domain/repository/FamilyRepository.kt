@@ -16,4 +16,5 @@ interface FamilyRepository {
     suspend fun unpinFamily(familyId: String)
     fun getPinnedFamilyIds(): Flow<Set<String>>
     fun observeFamilyChanges(): Flow<Unit>
+    fun notifyMemberChanged()
 }
