@@ -29,9 +29,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
@@ -42,7 +46,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.eggheadengineers.nimons360.core.share.writeShareFile
-import com.eggheadengineers.nimons360.domain.model.FavoriteLocation
+import com.eggheadengineers.nimons360.domain.model.LocationHistoryPoint
 import com.eggheadengineers.nimons360.ui.components.AppDarkButton
 import com.eggheadengineers.nimons360.ui.components.AppGrid
 import com.eggheadengineers.nimons360.ui.components.AppTopBar
@@ -63,6 +67,12 @@ fun AnalyticsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    var showAllRecentLocations by rememberSaveable { mutableStateOf(false) }
+    val visibleRecentLocations = if (showAllRecentLocations) {
+        state.recentLocations
+    } else {
+        state.recentLocations.take(5)
+    }
 
     Scaffold(
         containerColor = Surface,
@@ -105,8 +115,8 @@ fun AnalyticsScreen(
                         MetricRowModel(Icons.Outlined.Timeline, "Monthly distance avg", formatKm(state.monthlyDistanceAverageKm)),
                         MetricRowModel(Icons.Outlined.CalendarMonth, "Daily distance avg", formatKm(state.dailyDistanceAverageKm)),
                         MetricRowModel(Icons.Outlined.LocalFireDepartment, "Active days", state.activeDays.toString()),
-                        MetricRowModel(Icons.Outlined.LocationOn, "Marked locations", state.locations.size.toString()),
-                        MetricRowModel(Icons.Outlined.PhotoLibrary, "Photos", state.photoCount.toString()),
+                        MetricRowModel(Icons.Outlined.LocationOn, "History points", state.history.size.toString()),
+                        MetricRowModel(Icons.Outlined.PhotoLibrary, "Marked places", state.markedLocations.size.toString()),
                     ),
                 )
             }
@@ -136,16 +146,16 @@ fun AnalyticsScreen(
                 )
             }
             item {
-                SectionHeader(
-                    icon = Icons.Outlined.LocationOn,
-                    title = "Recent locations",
-                    subtitle = "Latest marked places from your local history.",
+                RecentLocationsHeader(
+                    canExpand = state.recentLocations.size > 5,
+                    expanded = showAllRecentLocations,
+                    onToggleExpanded = { showAllRecentLocations = !showAllRecentLocations },
                 )
             }
             if (state.recentLocations.isEmpty()) {
                 item {
                     Text(
-                        text = "No marked locations yet.",
+                        text = "No location history yet.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary,
                         modifier = Modifier.padding(vertical = AppGrid.Space3),
@@ -154,9 +164,9 @@ fun AnalyticsScreen(
             } else {
                 item {
                     Column {
-                        state.recentLocations.forEachIndexed { index, location ->
+                        visibleRecentLocations.forEachIndexed { index, location ->
                             RecentLocationRow(location)
-                            if (index != state.recentLocations.lastIndex) {
+                            if (index != visibleRecentLocations.lastIndex) {
                                 HorizontalDivider(color = Border.copy(alpha = 0.44f))
                             }
                         }
@@ -397,6 +407,58 @@ private fun SectionHeader(
 }
 
 @Composable
+private fun RecentLocationsHeader(
+    canExpand: Boolean,
+    expanded: Boolean,
+    onToggleExpanded: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(AppGrid.Space3),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Border.copy(alpha = 0.18f)),
+            contentAlignment = androidx.compose.ui.Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.LocationOn,
+                contentDescription = null,
+                tint = TextPrimary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = "Recent locations",
+                style = MaterialTheme.typography.titleLarge,
+                color = TextPrimary,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = "Latest recorded GPS history.",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+            )
+        }
+        if (canExpand) {
+            TextButton(onClick = onToggleExpanded) {
+                Text(
+                    text = if (expanded) "Show less" else "See all",
+                    color = TextPrimary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun DistanceGraphSection(
     monthLabel: String,
     values: List<DailyDistance>,
@@ -463,7 +525,7 @@ private fun DistanceGraph(values: List<DailyDistance>) {
 }
 
 @Composable
-private fun RecentLocationRow(location: FavoriteLocation) {
+private fun RecentLocationRow(location: LocationHistoryPoint) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -482,18 +544,18 @@ private fun RecentLocationRow(location: FavoriteLocation) {
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(
-                text = location.name,
+                text = "${"%.5f".format(location.lat)}, ${"%.5f".format(location.lng)}",
                 style = MaterialTheme.typography.titleSmall,
                 color = TextPrimary,
             )
             Text(
-                text = "${"%.5f".format(location.lat)}, ${"%.5f".format(location.lng)}",
+                text = "Recorded automatically",
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary,
             )
         }
         Text(
-            text = formatDate(location.updatedAt),
+            text = formatDate(location.recordedAt),
             style = MaterialTheme.typography.bodySmall,
             color = TextSecondary,
         )

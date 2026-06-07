@@ -87,6 +87,9 @@ class MainActivity : ComponentActivity() {
         val app = application as NimonsApplication
         val isLoggedIn = runBlocking { app.sessionManager.isLoggedIn() }
         requestNotificationPermissionIfNeeded()
+        if (isLoggedIn && hasLocationPermission()) {
+            app.locationHistoryRecorder.start()
+        }
         val startDestination = if (isLoggedIn) Screen.Home.route else Screen.Login.route
         setContent {
             Nimons360Theme {
@@ -116,6 +119,10 @@ class MainActivity : ComponentActivity() {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
+
+    private fun hasLocationPermission(): Boolean =
+        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

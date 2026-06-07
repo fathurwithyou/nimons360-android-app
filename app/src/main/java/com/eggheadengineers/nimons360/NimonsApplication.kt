@@ -3,6 +3,7 @@ package com.eggheadengineers.nimons360
 import android.app.Application
 import com.eggheadengineers.nimons360.core.battery.BatteryProvider
 import com.eggheadengineers.nimons360.core.files.FavoriteLocationPhotoStore
+import com.eggheadengineers.nimons360.core.location.LocationHistoryRecorder
 import com.eggheadengineers.nimons360.core.location.LocationTracker
 import com.eggheadengineers.nimons360.core.network.ConnectivityObserver
 import com.eggheadengineers.nimons360.core.notifications.NotificationTokenSync
@@ -13,8 +14,13 @@ import com.eggheadengineers.nimons360.data.local.AppDatabase
 import com.eggheadengineers.nimons360.data.network.NetworkModule
 import com.eggheadengineers.nimons360.data.repository.*
 import com.eggheadengineers.nimons360.domain.repository.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Dispatchers
 
 class NimonsApplication : Application() {
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
     val sessionManager by lazy { 
         SessionManager(this) 
     }
@@ -50,6 +56,12 @@ class NimonsApplication : Application() {
     }
     val favoriteLocationRepository: FavoriteLocationRepository by lazy {
         FavoriteLocationRepositoryImpl(database.favoriteLocationDao(), FavoriteLocationPhotoStore(this))
+    }
+    val locationHistoryRepository: LocationHistoryRepository by lazy {
+        LocationHistoryRepositoryImpl(database.locationHistoryDao())
+    }
+    val locationHistoryRecorder by lazy {
+        LocationHistoryRecorder(locationTracker, locationHistoryRepository, appScope)
     }
     val liveStreamRepository: LiveStreamRepository by lazy {
         LiveStreamRepositoryImpl(liveStreamApi, liveWsClient, sessionManager)

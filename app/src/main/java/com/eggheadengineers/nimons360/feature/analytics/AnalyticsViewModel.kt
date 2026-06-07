@@ -4,9 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.eggheadengineers.nimons360.domain.model.FavoriteLocation
+import com.eggheadengineers.nimons360.domain.model.LocationHistoryPoint
 import com.eggheadengineers.nimons360.domain.repository.FavoriteLocationRepository
+import com.eggheadengineers.nimons360.domain.repository.LocationHistoryRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import java.text.SimpleDateFormat
@@ -32,16 +35,17 @@ data class MonthlyDistance(
 )
 
 data class AnalyticsUiState(
-    val locations: List<FavoriteLocation> = emptyList(),
+    val history: List<LocationHistoryPoint> = emptyList(),
+    val markedLocations: List<FavoriteLocation> = emptyList(),
 ) {
-    val sortedLocations: List<FavoriteLocation>
-        get() = locations.sortedBy { it.createdAt }
+    val sortedHistory: List<LocationHistoryPoint>
+        get() = history.sortedBy { it.recordedAt }
 
-    val recentLocations: List<FavoriteLocation>
-        get() = locations.sortedByDescending { it.updatedAt }.take(5)
+    val recentLocations: List<LocationHistoryPoint>
+        get() = history.sortedByDescending { it.recordedAt }
 
     val dailyDistances: List<DailyDistance>
-        get() = buildDailyDistances(sortedLocations)
+        get() = buildDailyDistances(sortedHistory)
 
     val monthlyDistances: List<MonthlyDistance>
         get() = dailyDistances
@@ -68,30 +72,37 @@ data class AnalyticsUiState(
         get() = dailyDistances.filter { it.distanceKm > 0.0 }.map { it.distanceKm }.averageOrZero()
 
     val activeDays: Int
-        get() = sortedLocations.map { dayKey(it.createdAt) }.toSet().size
+        get() = sortedHistory.map { dayKey(it.recordedAt) }.toSet().size
 
     val photoCount: Int
-        get() = locations.sumOf { it.photoPaths.size }
+        get() = markedLocations.sumOf { it.photoPaths.size }
 }
 
 class AnalyticsViewModel(
+    locationHistoryRepository: LocationHistoryRepository,
     favoriteLocationRepository: FavoriteLocationRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(AnalyticsUiState())
     val uiState: StateFlow<AnalyticsUiState> = _uiState
 
     init {
-        favoriteLocationRepository.observeAll()
-            .onEach { locations -> _uiState.value = AnalyticsUiState(locations) }
+        combine(
+            locationHistoryRepository.observeAll(),
+            favoriteLocationRepository.observeAll(),
+        ) { history, markedLocations ->
+            AnalyticsUiState(history = history, markedLocations = markedLocations)
+        }
+            .onEach { state -> _uiState.value = state }
             .launchIn(viewModelScope)
     }
 
     class Factory(
+        private val locationHistoryRepository: LocationHistoryRepository,
         private val favoriteLocationRepository: FavoriteLocationRepository,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>) =
-            AnalyticsViewModel(favoriteLocationRepository) as T
+            AnalyticsViewModel(locationHistoryRepository, favoriteLocationRepository) as T
     }
 }
 
@@ -102,7 +113,8 @@ fun analyticsCsv(state: AnalyticsUiState): String {
         "monthly_distance_average_km,${state.monthlyDistanceAverageKm}",
         "daily_distance_average_km,${state.dailyDistanceAverageKm}",
         "active_days,${state.activeDays}",
-        "location_count,${state.locations.size}",
+        "location_history_count,${state.history.size}",
+        "marked_location_count,${state.markedLocations.size}",
         "photo_count,${state.photoCount}",
         "",
         "daily_distance",
@@ -112,9 +124,22 @@ fun analyticsCsv(state: AnalyticsUiState): String {
     val historyHeader = listOf(
         "",
         "location_history",
+        "id,latitude,longitude,recorded_at",
+    )
+    val historyRows = state.history.sortedByDescending { it.recordedAt }.map { location ->
+        listOf(
+            location.id.toString(),
+            location.lat.toString(),
+            location.lng.toString(),
+            location.recordedAt.toString(),
+        ).joinToString(",")
+    }
+    val markedLocationHeader = listOf(
+        "",
+        "marked_locations",
         "id,name,description,latitude,longitude,photo_count,created_at,updated_at",
     )
-    val historyRows = state.locations.sortedByDescending { it.updatedAt }.map { location ->
+    val markedLocationRows = state.markedLocations.sortedByDescending { it.updatedAt }.map { location ->
         listOf(
             location.id.toString(),
             location.name.csvEscape(),
@@ -126,12 +151,13 @@ fun analyticsCsv(state: AnalyticsUiState): String {
             location.updatedAt.toString(),
         ).joinToString(",")
     }
-    return (analyticsRows + historyHeader + historyRows).joinToString("\n") + "\n"
+    return (analyticsRows + historyHeader + historyRows + markedLocationHeader + markedLocationRows)
+        .joinToString("\n") + "\n"
 }
 
-private fun buildDailyDistances(locations: List<FavoriteLocation>): List<DailyDistance> =
+private fun buildDailyDistances(locations: List<LocationHistoryPoint>): List<DailyDistance> =
     locations.zipWithNext { previous, current ->
-        val timestamp = current.createdAt
+        val timestamp = current.recordedAt
         DailyDistance(
             dayKey = dayKey(timestamp),
             dayOfMonth = dayOfMonth(timestamp),

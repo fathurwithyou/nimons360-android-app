@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.eggheadengineers.nimons360.core.battery.BatteryProvider
 import com.eggheadengineers.nimons360.core.battery.BatteryState
+import com.eggheadengineers.nimons360.core.location.LocationHistoryRecorder
 import com.eggheadengineers.nimons360.core.location.LocationTracker
 import com.eggheadengineers.nimons360.core.network.ConnectivityObserver
 import com.eggheadengineers.nimons360.core.network.NetworkStatus
@@ -64,6 +65,7 @@ class MapViewModel(
     private val batteryProvider: BatteryProvider,
     private val connectivityObserver: ConnectivityObserver,
     private val userPreferenceStore: UserPreferenceStore,
+    private val locationHistoryRecorder: LocationHistoryRecorder,
 ) : ViewModel() {
     companion object {
         private const val PRESENCE_FAMILY_REFRESH_COOLDOWN_MS = 8_000L
@@ -144,6 +146,7 @@ class MapViewModel(
 
     fun onPermissionGranted() {
         _uiState.update { it.copy(hasLocationPermission = true) }
+        locationHistoryRecorder.start()
         if (userPreferenceStore.isLocationSharingEnabled()) {
             PresenceLocationService.start(locationTracker.context)
         }
@@ -284,11 +287,13 @@ class MapViewModel(
         private val batteryProvider: BatteryProvider,
         private val connectivityObserver: ConnectivityObserver,
         private val userPreferenceStore: UserPreferenceStore,
+        private val locationHistoryRecorder: LocationHistoryRecorder,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>) = MapViewModel(
             presenceRepo, familyRepo, favoriteLocationRepo, locationTracker,
             orientationProvider, batteryProvider, connectivityObserver, userPreferenceStore,
+            locationHistoryRecorder,
         ) as T
     }
 }

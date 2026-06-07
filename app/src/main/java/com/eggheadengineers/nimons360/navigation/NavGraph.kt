@@ -92,7 +92,7 @@ fun NimonsNavGraph(
                     app.presenceRepository, app.familyRepository,
                     app.favoriteLocationRepository, app.locationTracker,
                     app.orientationProvider, app.batteryProvider, app.connectivityObserver,
-                    app.userPreferenceStore,
+                    app.userPreferenceStore, app.locationHistoryRecorder,
                 )
             )
             MapScreen(viewModel = vm)
@@ -147,7 +147,10 @@ fun NimonsNavGraph(
 
         composable(Screen.Analytics.route) {
             val vm: AnalyticsViewModel = viewModel(
-                factory = AnalyticsViewModel.Factory(app.favoriteLocationRepository),
+                factory = AnalyticsViewModel.Factory(
+                    app.locationHistoryRepository,
+                    app.favoriteLocationRepository,
+                ),
             )
             AnalyticsScreen(
                 viewModel = vm,

@@ -10,13 +10,15 @@ import androidx.room.RoomDatabase
         PinnedFamilyEntity::class,
         FavoriteLocationEntity::class,
         FavoriteLocationPhotoEntity::class,
+        LocationHistoryEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun pinnedFamilyDao(): PinnedFamilyDao
     abstract fun favoriteLocationDao(): FavoriteLocationDao
+    abstract fun locationHistoryDao(): LocationHistoryDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
