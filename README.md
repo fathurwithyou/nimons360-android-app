@@ -294,14 +294,16 @@ sebelum menjalankan push notification end-to-end.
 
 - Menampilkan avatar, nama, email, serta fitur edit nama dan sign out.
 
-<img src="screenshot/profile.jpeg" width="270"/>
+<img src="screenshot/profile_1.jpeg" width="270"/>
 
 ### Analytics
 
 - Menampilkan monthly distance average, total distance, daily distance average, active days, daily distance graph per month, dan recent locations.
 - Tersedia fitur export CSV berisi analytics serta location history.
 
-<img src="screenshot/analytics.jpeg" width="270"/>
+<img src="screenshot/analytics_1.jpeg" width="270"/>
+
+<img src="screenshot/analytics_2.jpeg" width="270"/>
 
 ### Customize Pin
 
@@ -320,42 +322,23 @@ sebelum menjalankan push notification end-to-end.
 ### Notification
 
 - Menampilkan bottom sheet untuk mengirim notifikasi ke anggota family.
-- Pesan notifikasi tidak dapat dikirim jika input kosong.
 
 <img src="screenshot/notification.jpeg" width="270"/>
 
-### Livestream Broadcaster
-
-- Menampilkan halaman broadcaster untuk memulai livestream pada family tertentu.
-- Stream dapat dibuat dari halaman Family Detail melalui aksi `Go Live`.
-
-<img src="screenshot/livestreamBroadcaster.jpeg" width="270"/>
-
-### Livestream Viewer
-
-- Menampilkan halaman viewer untuk menonton livestream family yang sedang aktif.
-- Stream aktif dapat dibuka dari daftar live stream pada Family Detail.
-
-<img src="screenshot/livestreamViewer.jpeg" width="270"/>
 
 ### Map Detail
 
 - Menampilkan detail marker, member, atau favorite location pada halaman Map.
-- Tersedia aksi tambahan seperti `Share story` dari panel lokasi.
 
-<img src="screenshot/mapDetail.jpeg" width="270"/>
+<img src="screenshot/map_1.jpeg" width="270"/>
 
-### Home Landscape
+<img src="screenshot/map_2.jpeg" width="270"/>
 
-- Menampilkan halaman Home saat perangkat berada pada orientasi landscape.
-- Layout landscape menggunakan resource `res/layout-land`.
-
-<img src="screenshot/homeLandscape.jpeg" width="480"/>
+<img src="screenshot/map_3.jpeg" width="270"/>
 
 ### Families Landscape
 
 - Menampilkan halaman Families saat perangkat berada pada orientasi landscape.
-- Layout landscape menggunakan resource `res/layout-land`.
 
 <img src="screenshot/familiesLandscape.jpeg" width="480"/>
 
