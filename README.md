@@ -215,23 +215,6 @@ Perbaikan accessibility yang diterapkan:
 - Before: beberapa aksi bonus belum memiliki jalur akses eksplisit di Profile/Family Detail/Map.
 - After: Analytics, Customize Pin, QR share, dan map screenshot share tersedia sebagai tombol/aksi bernama dan dapat ditemukan dari alur utama.
 
-### Accessibility Scanner Evidence
-
-Accessibility Scanner perlu dijalankan setelah fitur milestone selesai pada screen Login, Home, Families, Create Family, Family Detail, Map, Profile, Analytics, dan Customize Pin.
-
-Ringkasan suggestion sebelum perbaikan:
-
-- Beberapa tombol ikon belum memiliki label yang cukup jelas.
-- Beberapa target sentuh aksi bonus terlalu bergantung pada ikon tanpa teks.
-- Beberapa aksi baru belum dapat ditemukan dari halaman utama Profile atau Family Detail.
-
-Perbaikan yang diterapkan:
-
-- Menambahkan `contentDescription` pada ikon back, share, QR, notification, profile-photo edit, dan action penting lain.
-- Menggunakan tombol teks untuk aksi baru yang bukan ikon familiar, seperti `Export CSV`, `Download pin`, `Share downloaded pin`, dan `Share QR code`.
-- Memastikan tombol utama menggunakan tinggi 48-52dp dan icon button 40-48dp sesuai minimum touch target.
-- Mempertahankan kontras warna final design system: teks utama charcoal di atas surface putih, primary action charcoal, dan destructive action merah hanya untuk aksi destructive.
-
 ---
 
 ## Bonus Features
@@ -312,6 +295,69 @@ sebelum menjalankan push notification end-to-end.
 - Menampilkan avatar, nama, email, serta fitur edit nama dan sign out.
 
 <img src="screenshot/profile.jpeg" width="270"/>
+
+### Analytics
+
+- Menampilkan monthly distance average, total distance, daily distance average, active days, daily distance graph per month, dan recent locations.
+- Tersedia fitur export CSV berisi analytics serta location history.
+
+<img src="screenshot/analytics.jpeg" width="270"/>
+
+### Customize Pin
+
+- Menampilkan halaman custom pin untuk mengunduh pin kustom.
+- Tersedia progress download melalui foreground service dan aksi share downloaded pin.
+
+<img src="screenshot/customizePin.jpeg" width="270"/>
+
+### QR Family Sharing
+
+- Menampilkan QR code family dari halaman Family Detail.
+- QR code dapat dibagikan melalui aksi `Share QR code`.
+
+<img src="screenshot/qrShare.jpeg" width="270"/>
+
+### Notification
+
+- Menampilkan bottom sheet untuk mengirim notifikasi ke anggota family.
+- Pesan notifikasi tidak dapat dikirim jika input kosong.
+
+<img src="screenshot/notification.jpeg" width="270"/>
+
+### Livestream Broadcaster
+
+- Menampilkan halaman broadcaster untuk memulai livestream pada family tertentu.
+- Stream dapat dibuat dari halaman Family Detail melalui aksi `Go Live`.
+
+<img src="screenshot/livestreamBroadcaster.jpeg" width="270"/>
+
+### Livestream Viewer
+
+- Menampilkan halaman viewer untuk menonton livestream family yang sedang aktif.
+- Stream aktif dapat dibuka dari daftar live stream pada Family Detail.
+
+<img src="screenshot/livestreamViewer.jpeg" width="270"/>
+
+### Map Detail
+
+- Menampilkan detail marker, member, atau favorite location pada halaman Map.
+- Tersedia aksi tambahan seperti `Share story` dari panel lokasi.
+
+<img src="screenshot/mapDetail.jpeg" width="270"/>
+
+### Home Landscape
+
+- Menampilkan halaman Home saat perangkat berada pada orientasi landscape.
+- Layout landscape menggunakan resource `res/layout-land`.
+
+<img src="screenshot/homeLandscape.jpeg" width="480"/>
+
+### Families Landscape
+
+- Menampilkan halaman Families saat perangkat berada pada orientasi landscape.
+- Layout landscape menggunakan resource `res/layout-land`.
+
+<img src="screenshot/familiesLandscape.jpeg" width="480"/>
 
 ---
 
